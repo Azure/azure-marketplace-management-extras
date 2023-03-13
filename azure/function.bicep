@@ -13,6 +13,10 @@ param spClientId string
 param spClientSecret string
 @secure()
 param spTenantId string
+@secure()
+param tableName string
+@secure()
+param connectionString string
 
 var uniqueName = '${appName}-${substring(replace(guid(resourceGroup().id), '-', ''), 0, 8)}'
 // Storage account and Key Vault names must be between 3 and 24 characters in length and use numbers and lower-case letters only.
@@ -86,6 +90,20 @@ resource secretTenantId 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
   name: '${keyvault.name}/spTenantId'
   properties: {
     value: spTenantId
+  }
+}
+
+resource secretTableName 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
+  name: '${keyvault.name}/tableName'
+  properties: {
+    value: tableName
+  }
+}
+
+resource secretConnectionString 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
+  name: '${keyvault.name}/connectionString'
+  properties: {
+    value: connectionString
   }
 }
 
@@ -241,6 +259,14 @@ resource function 'Microsoft.Web/sites@2021-03-01' = {
         {
           name: 'STREAM_NAME'
           value: streamName
+        }
+        {
+          name: 'CONNECTION_STRING'
+          value: '@Microsoft.KeyVault(SecretUri=${secretConnectionString.properties.secretUriWithVersion})'
+        }
+        {
+          name: 'TABLE_NAME'
+          value: '@Microsoft.KeyVault(SecretUri=${secretTableName.properties.secretUriWithVersion})'
         }
       ]
     }

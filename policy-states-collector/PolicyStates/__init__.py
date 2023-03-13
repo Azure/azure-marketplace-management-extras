@@ -1,9 +1,11 @@
+from __future__ import annotations
 from azure.mgmt.policyinsights.aio import PolicyInsightsClient
 from azure.mgmt.policyinsights.models import QueryOptions
 from azure.identity.aio import DefaultAzureCredential
 from azure.identity.aio import ClientSecretCredential
 import azure.functions as func
 import asyncio
+from collections import AsyncIterable
 
 from azure.monitor.ingestion.aio import LogsIngestionClient
 from azure.monitor.ingestion import UploadLogsStatus
@@ -26,7 +28,7 @@ CONNECTION_STRING = str(os.environ["CONNECTION_STRING"])
 TABLE_NAME = str(os.environ["TABLE_NAME"])
 
 
-async def get_resource_group_policies(policy_client, subscription_id, resource_group_name):
+async def get_resource_group_policies(policy_client, subscription_id, resource_group_name) -> AsyncIterable:
     # Do not change or remove filter. It is used to query policies specifically assigned for RG
     scope = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}"
     filter = "PolicyAssignmentScope eq '{}'".format(scope)
@@ -40,7 +42,7 @@ async def get_resource_group_policies(policy_client, subscription_id, resource_g
         query_options=query_options)
 
 
-async def get_policies(client_credential, subscription_id, resource_group_name):
+async def get_policies(client_credential, subscription_id, resource_group_name) -> List[dict] | None:
     try:
         async with PolicyInsightsClient(
                 client_credential, subscription_id=subscription_id) as policy_client:
@@ -67,11 +69,11 @@ async def get_policies(client_credential, subscription_id, resource_group_name):
             else:
                 return contoso_policies
     except Exception as e:
-        msg = f"Failed to get policies for RG {resource_group_name}, error: {e}"
+        msg = f"Failed to get/filter policies for RG {resource_group_name}, error: {e}"
         logging.error(msg)
 
 
-async def run():
+async def run() -> None:
     all_applications_policies_to_upload = []
 
     async with ClientSecretCredential(
