@@ -7,7 +7,7 @@
       "name": "mytimer",
       "type": "timerTrigger",
       "direction": "in",
-      "schedule": "* * * * * *"
+      "schedule": "*/1 * * * *"
     }
   ]
 }
