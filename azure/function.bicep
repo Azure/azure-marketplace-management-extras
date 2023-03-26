@@ -31,6 +31,7 @@ var keyvaultName = uniqueNameWithoutDashes
 
 var monitoringMetricsPublisherRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
 var readerRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
+// var storageBlobReaderRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
@@ -290,3 +291,12 @@ resource monitoringMetricsPublisher 'Microsoft.Authorization/roleAssignments@202
     roleDefinitionId: monitoringMetricsPublisherRole
   }
 }
+
+// resource storageBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+//   name: guid('storageBlobReader', resourceGroup().id)
+//   properties: {
+//     principalId: function.identity.principalId
+//     principalType: 'ServicePrincipal'
+//     roleDefinitionId: storageBlobReaderRole
+//   }
+// }

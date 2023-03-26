@@ -67,6 +67,9 @@ resource policyContainerLogTable 'Microsoft.OperationalInsights/workspaces/table
     retentionInDays: 7
     totalRetentionInDays: 7
   }
+  dependsOn: [
+    logAnalyticsWorkspace
+  ]
 }
 // action groups
 resource actionGroupAlerts 'Microsoft.Insights/actionGroups@2022-06-01' = {
