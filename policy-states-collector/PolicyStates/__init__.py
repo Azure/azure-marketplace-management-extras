@@ -24,7 +24,7 @@ STREAM_NAME = str(os.environ["STREAM_NAME"])
 AZURE_TENANT_ID = str(os.environ["AZURE_TENANT_ID"])
 AZURE_CLIENT_ID = str(os.environ["AZURE_CLIENT_ID"])
 AZURE_CLIENT_SECRET = str(os.environ["AZURE_CLIENT_SECRET"])
-CONNECTION_STRING = str(os.environ["CONNECTION_STRING"])
+CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
 TABLE_NAME = str(os.environ["TABLE_NAME"])
 
 

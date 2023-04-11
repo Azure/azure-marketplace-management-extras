@@ -3,6 +3,7 @@ param logAnalyticsWorkspaceName string
 param logAnalyticsWorkspaceId string
 param streamDeclaration string
 param streamName string
+param storageAccountTableName string
 targetScope = 'resourceGroup'
 var appName = 'marketplace-m'
 
@@ -13,10 +14,6 @@ param spClientId string
 param spClientSecret string
 @secure()
 param spTenantId string
-@secure()
-param tableName string
-@secure()
-param connectionString string
 
 var uniqueName = '${appName}-${substring(replace(guid(resourceGroup().id), '-', ''), 0, 8)}'
 // Storage account and Key Vault names must be between 3 and 24 characters in length and use numbers and lower-case letters only.
@@ -31,7 +28,7 @@ var keyvaultName = uniqueNameWithoutDashes
 
 var monitoringMetricsPublisherRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
 var readerRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
-// var storageBlobReaderRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
+var storageBlobReaderRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
@@ -39,6 +36,17 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   kind: 'StorageV2'
   sku: {
     name: 'Standard_LRS'
+  }
+}
+
+// update later to have correct fields
+resource storageAccountTable 'Microsoft.Storage/storageAccounts/tableServices@2022-09-01' = {
+  name: storageAccountTableName
+  parent: storageAccount
+  properties: {
+    cors: {
+      corsRules: []
+    }
   }
 }
 
@@ -91,20 +99,6 @@ resource secretTenantId 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
   name: '${keyvault.name}/spTenantId'
   properties: {
     value: spTenantId
-  }
-}
-
-resource secretTableName 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/tableName'
-  properties: {
-    value: tableName
-  }
-}
-
-resource secretConnectionString 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/connectionString'
-  properties: {
-    value: connectionString
   }
 }
 
@@ -262,12 +256,8 @@ resource function 'Microsoft.Web/sites@2021-03-01' = {
           value: streamName
         }
         {
-          name: 'CONNECTION_STRING'
-          value: '@Microsoft.KeyVault(SecretUri=${secretConnectionString.properties.secretUriWithVersion})'
-        }
-        {
           name: 'TABLE_NAME'
-          value: '@Microsoft.KeyVault(SecretUri=${secretTableName.properties.secretUriWithVersion})'
+          value: storageAccountTableName
         }
       ]
     }
@@ -292,11 +282,11 @@ resource monitoringMetricsPublisher 'Microsoft.Authorization/roleAssignments@202
   }
 }
 
-// resource storageBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-//   name: guid('storageBlobReader', resourceGroup().id)
-//   properties: {
-//     principalId: function.identity.principalId
-//     principalType: 'ServicePrincipal'
-//     roleDefinitionId: storageBlobReaderRole
-//   }
-// }
+resource storageBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid('storageBlobReader', resourceGroup().id)
+  properties: {
+    principalId: function.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: storageBlobReaderRole
+  }
+}

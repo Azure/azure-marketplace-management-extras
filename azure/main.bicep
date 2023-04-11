@@ -1,17 +1,14 @@
 var logAnalyticsWorkspaceName = 'logAnalyticsMarketplace'
 var policyStatesTableName = 'PolicyComplianceStates_CL'
 var streamDeclaration = 'Custom-${policyStatesTableName}'
-
-param location string = resourceGroup().location
+var storageAccountTableName = 'default'
+param location string
+@secure()
 param spClientId string
 @secure()
 param spClientSecret string
 @secure()
 param spTenantId string
-@secure()
-param tableName string
-@secure()
-param connectionString string
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: logAnalyticsWorkspaceName
@@ -132,8 +129,7 @@ module policyStatesCollectorFunction 'function.bicep' = {
     spClientId: spClientId
     spClientSecret: spClientSecret
     spTenantId: spTenantId
-    tableName: tableName
-    connectionString: connectionString
+    storageAccountTableName: storageAccountTableName
   }
   dependsOn: [
     containerLogTable
@@ -141,5 +137,5 @@ module policyStatesCollectorFunction 'function.bicep' = {
 }
 
 // todo:
-// create SP to push into LA and get data from Blob storage
-// it will need reader role and publisher metrics roles
+// reader role and publisher metrics roles
+// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-api#assign-permissions-to-a-dcr
