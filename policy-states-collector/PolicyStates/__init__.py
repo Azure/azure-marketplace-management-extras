@@ -1,14 +1,14 @@
 from __future__ import annotations
 from azure.mgmt.policyinsights.aio import PolicyInsightsClient
 from azure.mgmt.policyinsights.models import QueryOptions
-from azure.identity.aio import DefaultAzureCredential
+from azure.identity.aio import ManagedIdentityCredential
 from azure.identity.aio import ClientSecretCredential
 import azure.functions as func
 import asyncio
 from collections import AsyncIterable
 
 from azure.monitor.ingestion.aio import LogsIngestionClient
-from azure.monitor.ingestion import UploadLogsStatus
+from azure.core.exceptions import HttpResponseError
 from azure.data.tables.aio import TableClient
 
 import logging
@@ -90,21 +90,19 @@ async def run() -> None:
                 client_credential, application["subscription_id"], application["resource_group_name"])
             all_applications_policies_to_upload.append(result)
 
-        results = await asyncio.gather(*all_applications_policies_to_upload, return_exceptions=True)
-        logging.info("results " + str(results))
+        contoso_policies_upload = await asyncio.gather(*all_applications_policies_to_upload, return_exceptions=True)
 
     # Upload policies
-    async with DefaultAzureCredential() as default_credential, LogsIngestionClient(
-            endpoint=DATA_COLLECTION_ENDPOINT, credential=default_credential, logging_enable=True) as logs_client:
-        response = await logs_client.upload(
-            rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=[1])
-        if response.status != UploadLogsStatus.SUCCESS:
-            failed_logs = response.failed_logs_index
-            msg = f"Failed to send data to Log Analytics: {failed_logs}"
-            logging.error(msg)
-            return msg
-        else:
+    async with ManagedIdentityCredential() as ingestion_credential, LogsIngestionClient(
+            endpoint=DATA_COLLECTION_ENDPOINT, credential=ingestion_credential, logging_enable=True) as logs_client:
+        try:
+            await logs_client.upload(
+                rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=contoso_policies_upload)
+            logging.info(f'Uploaded {len(contoso_policies_upload)} policies')
             logging.info("-------------COMPLETED------------")
+
+        except HttpResponseError as e:
+            logging.error(f"Upload failed: {e}")
 
 
 def main(mytimer: func.TimerRequest) -> None:
