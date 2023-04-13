@@ -14,7 +14,6 @@ from azure.data.tables.aio import TableClient
 import logging
 import os
 import json
-import time
 from typing import List
 
 DATA_COLLECTION_ENDPOINT = str(os.environ["DATA_COLLECTION_ENDPOINT"])
@@ -53,7 +52,6 @@ async def get_policies(client_credential, subscription_id, resource_group_name) 
             contoso_policies: List[dict] = []
 
             async for policy in policy_assignment_states:
-                # if policy.policy_assignment_name.startswith('myprefix-'):
                 contoso_policies.append({
                     'Policy_assignment_name': policy.policy_assignment_name,
                     'Policy_assignment_id': policy.policy_assignment_id,
@@ -107,9 +105,4 @@ async def run() -> None:
 
 def main(mytimer: func.TimerRequest) -> None:
     logging.info("-------------TRIGGERED BY TIMER-------------")
-    tic = time.perf_counter()
     asyncio.run(run())
-    toc = time.perf_counter()
-    logging.info(
-        f'took {toc - tic:0.4f} seconds'
-    )

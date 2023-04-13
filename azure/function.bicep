@@ -5,7 +5,7 @@ param streamDeclaration string
 param streamName string
 param storageAccountTableName string
 targetScope = 'resourceGroup'
-var appName = 'marketplace-m'
+param appName string
 
 // Service principal credentials
 @secure()
@@ -82,28 +82,32 @@ resource keyvault 'Microsoft.KeyVault/vaults@2021-10-01' = {
 }
 
 resource secretClientId 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/spClientId'
+  parent: keyvault
+  name: 'spClientId'
   properties: {
     value: spClientId
   }
 }
 
 resource secretClientSecret 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/spClientSecret'
+  parent: keyvault
+  name: 'spClientSecret'
   properties: {
     value: spClientSecret
   }
 }
 
 resource secretTenantId 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/spTenantId'
+  parent: keyvault
+  name: 'spTenantId'
   properties: {
     value: spTenantId
   }
 }
 
 resource accessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2021-10-01' = {
-  name: '${keyvault.name}/add'
+  parent: keyvault
+  name: 'add'
   properties: {
     accessPolicies: [
       {

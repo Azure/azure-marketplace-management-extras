@@ -2,6 +2,8 @@ var logAnalyticsWorkspaceName = 'logAnalyticsMarketplace'
 var policyStatesTableName = 'PolicyComplianceStates_CL'
 var streamDeclaration = 'Custom-${policyStatesTableName}'
 var storageAccountTableName = 'default'
+var appName = 'marketplace-apps'
+
 param location string
 @secure()
 param spClientId string
@@ -22,22 +24,19 @@ resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10
 }
 
 resource containerLogTable 'Microsoft.OperationalInsights/workspaces/tables@2022-10-01' = {
-  name: '${logAnalyticsWorkspaceName}/ContainerLog'
+  parent: logAnalyticsWorkspace
+  name: 'ContainerLog'
   properties: {
-    plan: 'Analytics' // Consider 'Basic' plan for lower costs, see: https://samcogan.com/finally-cheaper-options-for-azure-monitor-logs/
+    plan: 'Analytics'
     retentionInDays: 7
     totalRetentionInDays: 7
     policyStatesTableName: policyStatesTableName
   }
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
 }
 
-// 2022-10-01 version is throwing error "Unsupported api version"
-// Need to be tested again later
 resource policyContainerLogTable 'Microsoft.OperationalInsights/workspaces/tables@2021-12-01-preview' = {
-  name: '${logAnalyticsWorkspaceName}/${policyStatesTableName}'
+  parent: logAnalyticsWorkspace
+  name: policyStatesTableName
   properties: {
     plan: 'Analytics' // Needs to be Analytics plan to configure alerts on this data
     schema: {
@@ -64,9 +63,6 @@ resource policyContainerLogTable 'Microsoft.OperationalInsights/workspaces/table
     retentionInDays: 7
     totalRetentionInDays: 7
   }
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
 }
 // action groups
 resource actionGroupAlerts 'Microsoft.Insights/actionGroups@2022-06-01' = {
@@ -130,12 +126,9 @@ module policyStatesCollectorFunction 'function.bicep' = {
     spClientSecret: spClientSecret
     spTenantId: spTenantId
     storageAccountTableName: storageAccountTableName
+    appName: appName
   }
   dependsOn: [
     containerLogTable
   ]
 }
-
-// todo:
-// reader role and publisher metrics roles
-// https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-api#assign-permissions-to-a-dcr
