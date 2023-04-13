@@ -97,12 +97,10 @@ async def run() -> None:
             await logs_client.upload(
                 rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=contoso_policies_upload)
             logging.info(f'Uploaded {len(contoso_policies_upload)} policies')
-            logging.info("-------------COMPLETED------------")
 
         except HttpResponseError as e:
             logging.error(f"Upload failed: {e}")
 
 
 def main(mytimer: func.TimerRequest) -> None:
-    logging.info("-------------TRIGGERED BY TIMER-------------")
     asyncio.run(run())

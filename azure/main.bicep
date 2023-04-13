@@ -1,10 +1,13 @@
+targetScope = 'resourceGroup'
+
 var logAnalyticsWorkspaceName = 'logAnalyticsMarketplace'
 var policyStatesTableName = 'PolicyComplianceStates_CL'
 var streamDeclaration = 'Custom-${policyStatesTableName}'
 var storageAccountTableName = 'default'
-var appName = 'marketplace-apps'
 
-param location string
+param appName string
+param location string = resourceGroup().location
+
 @secure()
 param spClientId string
 @secure()
