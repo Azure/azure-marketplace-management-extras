@@ -16,25 +16,15 @@ import os
 import json
 from typing import List
 
-# DATA_COLLECTION_ENDPOINT = str(os.environ["DATA_COLLECTION_ENDPOINT"])
-# DATA_COLLECTION_IMMUTABLE_ID = str(
-#     os.environ["DATA_COLLECTION_IMMUTABLE_ID"])
-# STREAM_NAME = str(os.environ["STREAM_NAME"])
-# AZURE_TENANT_ID = str(os.environ["AZURE_TENANT_ID"])
-# AZURE_CLIENT_ID = str(os.environ["AZURE_CLIENT_ID"])
-# AZURE_CLIENT_SECRET = str(os.environ["AZURE_CLIENT_SECRET"])
-# CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
-# TABLE_NAME = str(os.environ["TABLE_NAME"])
-
-DATA_COLLECTION_ENDPOINT = "test"
-DATA_COLLECTION_IMMUTABLE_ID = "test"
-STREAM_NAME = "test"
-AZURE_TENANT_ID = "test"
-AZURE_CLIENT_ID = "test"
-AZURE_CLIENT_SECRET = "test"
-CONNECTION_STRING = "test"
-TABLE_NAME = "test"
-
+DATA_COLLECTION_ENDPOINT = str(os.environ["DATA_COLLECTION_ENDPOINT"])
+DATA_COLLECTION_IMMUTABLE_ID = str(
+    os.environ["DATA_COLLECTION_IMMUTABLE_ID"])
+STREAM_NAME = str(os.environ["STREAM_NAME"])
+AZURE_TENANT_ID = str(os.environ["AZURE_TENANT_ID"])
+AZURE_CLIENT_ID = str(os.environ["AZURE_CLIENT_ID"])
+AZURE_CLIENT_SECRET = str(os.environ["AZURE_CLIENT_SECRET"])
+CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
+TABLE_NAME = str(os.environ["TABLE_NAME"])
 
 async def get_resource_group_policies(policy_client, subscription_id, resource_group_name) -> AsyncIterable:
     # Do not change or remove filter. It is used to query policies specifically assigned for RG
@@ -96,18 +86,18 @@ async def run() -> None:
                 client_credential, application["subscription_id"], application["resource_group_name"])
             all_applications_policies_to_upload.append(result)
 
-        # policies_upload = await asyncio.gather(*all_applications_policies_to_upload, return_exceptions=True)
+        policies_upload = await asyncio.gather(*all_applications_policies_to_upload, return_exceptions=True)
 
-    # # Upload policies
-    # async with ManagedIdentityCredential() as ingestion_credential, LogsIngestionClient(
-    #         endpoint=DATA_COLLECTION_ENDPOINT, credential=ingestion_credential, logging_enable=True) as logs_client:
-    #     try:
-    #         await logs_client.upload(
-    #             rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=policies_upload)
-    #         logging.info(f'Uploaded {len(policies_upload)} policies')
+    # Upload policies
+    async with ManagedIdentityCredential() as ingestion_credential, LogsIngestionClient(
+            endpoint=DATA_COLLECTION_ENDPOINT, credential=ingestion_credential, logging_enable=True) as logs_client:
+        try:
+            await logs_client.upload(
+                rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=policies_upload)
+            logging.info(f'Uploaded {len(policies_upload)} policies')
 
-    #     except HttpResponseError as e:
-    #         logging.error(f"Upload failed: {e}")
+        except HttpResponseError as e:
+            logging.error(f"Upload failed: {e}")
 
 
 def main(mytimer: func.TimerRequest) -> None:
