@@ -9,3 +9,4 @@ azure-core~=1.26.4
 azure-mgmt-resource~=22.0.0
 azure-monitor-ingestion~=1.0.1
 requests~=2.28.2
+pytest
