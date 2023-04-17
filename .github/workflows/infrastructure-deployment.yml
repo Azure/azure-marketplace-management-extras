@@ -68,3 +68,5 @@ jobs:
             spClientSecret=${{ secrets.SP_CLIENT_SECRET }}
             spTenantId=${{ secrets.SP_TENANT_ID }}
           deploymentName: git-${{ env.SHA_SHORT }}
+
+        # print function app name

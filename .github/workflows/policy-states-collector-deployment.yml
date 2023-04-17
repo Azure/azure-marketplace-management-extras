@@ -54,7 +54,7 @@ jobs:
           invoke_url=$(az functionapp function show \
             -g ${{ vars.RESOURCE_GROUP_NAME }} \
             -n ${{ github.event.inputs.functionAppName }} \
-            --function-name NotificationHandler \
+            --function-name PolicyStates \
             -o tsv --query invokeUrlTemplate)
 
           echo "✅ Function invoke URL: $invoke_url"
