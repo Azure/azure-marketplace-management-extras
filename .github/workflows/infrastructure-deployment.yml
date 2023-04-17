@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 env:
-  APP_NAME: 'marketplaceapps'
+  APP_NAME: 'marketplace'
 
 concurrency:
   # Serializing this workflow.
