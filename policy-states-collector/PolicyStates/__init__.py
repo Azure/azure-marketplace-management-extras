@@ -1,95 +1,104 @@
-from azure.mgmt.policyinsights._policy_insights_client import PolicyInsightsClient
+from __future__ import annotations
+from azure.mgmt.policyinsights.aio import PolicyInsightsClient
 from azure.mgmt.policyinsights.models import QueryOptions
-from azure.identity import DefaultAzureCredential
+from azure.identity.aio import ManagedIdentityCredential
+from azure.identity.aio import ClientSecretCredential
 import azure.functions as func
+import asyncio
+from collections import AsyncIterable
+
+from azure.monitor.ingestion.aio import LogsIngestionClient
+from azure.core.exceptions import HttpResponseError
+from azure.data.tables.aio import TableClient
+
 import logging
 import os
 import json
-from azure.monitor.ingestion import LogsIngestionClient, UploadLogsStatus
+from typing import List
 
-def get_policies(credential, SUBSCRIPTION_ID, RESOURCE_GROUP_NAME):
-    policyClient = PolicyInsightsClient(
-        credential, subscription_id=SUBSCRIPTION_ID)
+DATA_COLLECTION_ENDPOINT = str(os.environ["DATA_COLLECTION_ENDPOINT"])
+DATA_COLLECTION_IMMUTABLE_ID = str(
+    os.environ["DATA_COLLECTION_IMMUTABLE_ID"])
+STREAM_NAME = str(os.environ["STREAM_NAME"])
+AZURE_TENANT_ID = str(os.environ["AZURE_TENANT_ID"])
+AZURE_CLIENT_ID = str(os.environ["AZURE_CLIENT_ID"])
+AZURE_CLIENT_SECRET = str(os.environ["AZURE_CLIENT_SECRET"])
+CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
+TABLE_NAME = str(os.environ["TABLE_NAME"])
+
+async def get_resource_group_policies(policy_client, subscription_id, resource_group_name) -> AsyncIterable:
     # Do not change or remove filter. It is used to query policies specifically assigned for RG
-    scope = f"/subscriptions/{SUBSCRIPTION_ID}/resourceGroups/{RESOURCE_GROUP_NAME}"
+    scope = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}"
     filter = "PolicyAssignmentScope eq '{}'".format(scope)
     query_options = QueryOptions(filter=filter)
 
     # Only need latest evaluated policies
-    return policyClient.policy_states.list_query_results_for_resource_group(
+    return policy_client.policy_states.list_query_results_for_resource_group(
         policy_states_resource='latest',
-        subscription_id=SUBSCRIPTION_ID,
-        resource_group_name=RESOURCE_GROUP_NAME,
+        subscription_id=subscription_id,
+        resource_group_name=resource_group_name,
         query_options=query_options)
 
-# Manualy trigger an endpoint
-# https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=in-process&pivots=programming-language-javascript
+
+async def get_policies(client_credential, subscription_id, resource_group_name) -> List[dict] | None:
+    try:
+        async with PolicyInsightsClient(
+                client_credential, subscription_id=subscription_id) as policy_client:
+
+            policy_assignment_states = await get_resource_group_policies(policy_client, subscription_id, resource_group_name)
+
+            # Build up body object with only necessary values
+            policies: List[dict] = []
+
+            async for policy in policy_assignment_states:
+                policies.append({
+                    'Policy_assignment_name': policy.policy_assignment_name,
+                    'Policy_assignment_id': policy.policy_assignment_id,
+                    'Is_compliant': policy.is_compliant,
+                    'TimeGenerated': json.dumps(policy.timestamp, default=str)
+                })
+
+            logging.info(
+                f"Policies amount: {str(len(policies))} for RG {resource_group_name}")
+
+            if len(policies) == 0:
+                logging.warning("There are not any policies")
+            else:
+                return policies
+    except Exception as e:
+        msg = f"Failed to get/filter policies for RG {resource_group_name}, error: {e}"
+        logging.error(msg)
+
+
+async def run() -> None:
+    all_applications_policies_to_upload = []
+    async with ClientSecretCredential(
+        AZURE_TENANT_ID,
+        AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+    ) as client_credential, TableClient.from_connection_string(
+        CONNECTION_STRING, TABLE_NAME
+    ) as table_client:
+        managed_applications = table_client.query_entities(
+            "xTenant eq 'true'", select=['resource_group_name', 'subscription_id'])
+
+        async for application in managed_applications:
+            result = get_policies(
+                client_credential, application["subscription_id"], application["resource_group_name"])
+            all_applications_policies_to_upload.append(result)
+
+        policies_upload = await asyncio.gather(*all_applications_policies_to_upload, return_exceptions=True)
+
+    # Upload policies
+    async with ManagedIdentityCredential() as ingestion_credential, LogsIngestionClient(
+            endpoint=DATA_COLLECTION_ENDPOINT, credential=ingestion_credential, logging_enable=True) as logs_client:
+        try:
+            await logs_client.upload(
+                rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=policies_upload)
+            logging.info(f'Uploaded {len(policies_upload)} policies')
+
+        except HttpResponseError as e:
+            logging.error(f"Upload failed: {e}")
 
 
 def main(mytimer: func.TimerRequest) -> None:
-    # Environments need to be initialised inside main for mock testing
-    SUBSCRIPTION_ID = str(os.environ["SUBSCRIPTION_ID"])
-    RESOURCE_GROUP_NAME = str(os.environ["RESOURCE_GROUP_NAME"])
-    DATA_COLLECTION_ENDPOINT = str(os.environ["DATA_COLLECTION_ENDPOINT"])
-    DATA_COLLECTION_IMMUTABLE_ID = str(
-        os.environ["DATA_COLLECTION_IMMUTABLE_ID"])
-    STREAM_NAME = str(os.environ["STREAM_NAME"])
-
-    logging.info("Triggered by timer")
-
-    try:
-        # Acquire a credential object for the app identity. When running in the cloud,
-        # DefaultAzureCredential will use system's identity that has been created as part function deployment
-        # Check the following link for more information:
-        # https://docs.microsoft.com/en-us/azure/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application
-        credential = DefaultAzureCredential()
-    except Exception as e:
-        msg = f"Could not authenticate: {e}"
-        logging.error(msg)
-        return msg
-
-    policies_response = get_policies(
-        credential, SUBSCRIPTION_ID, RESOURCE_GROUP_NAME)
-
-    # Build up body object with only necessary values
-    policies = []
-    policy_assignment_states = list(policies_response)
-    try:
-        if policy_assignment_states:
-            for policy in policy_assignment_states:
-                if policy.policy_assignment_name.startswith('myprefix-'):
-                    policies.append({
-                        'Policy_assignment_name': policy.policy_assignment_name,
-                        'Policy_assignment_id': policy.policy_assignment_id,
-                        'Is_compliant': policy.is_compliant,
-                        'TimeGenerated': json.dumps(policy.timestamp, default=str)
-                    })
-        else:
-            msg = "There are not any policies"
-            logging.error(msg)
-            return msg
-
-    except Exception as e:
-        msg = f"Failed to filter policy assignment states: {e}"
-        logging.error(msg)
-        return msg
-
-    logging.info("policies length: " + str(len(policies)))
-
-    if len(policies) == 0:
-        logging.info("There are not any policies")
-        return "There are not any policies"
-
-    client = LogsIngestionClient(
-        endpoint=DATA_COLLECTION_ENDPOINT, credential=credential, logging_enable=True)
-
-    # https://learn.microsoft.com/en-us/azure/azure-monitor/logs/tutorial-logs-ingestion-portal#sample-data
-    response = client.upload(
-        rule_id=DATA_COLLECTION_IMMUTABLE_ID, stream_name=STREAM_NAME, logs=policies)
-    if response.status != UploadLogsStatus.SUCCESS:
-        failed_logs = response.failed_logs_index
-        msg = f"Failed to send data to Log Analytics: {failed_logs}"
-        logging.error(msg)
-        return msg
-
-    logging.info("Done")
+    asyncio.run(run())

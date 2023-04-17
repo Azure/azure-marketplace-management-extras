@@ -1,9 +1,13 @@
+param location string
+param logAnalyticsWorkspaceName string
+param logAnalyticsWorkspaceId string
+param streamDeclaration string
+param streamName string
+param storageAccountTableName string
 targetScope = 'resourceGroup'
-
 param appName string
-param location string = resourceGroup().location
-// Service principal credentials
 
+// Service principal credentials
 @secure()
 param spClientId string
 @secure()
@@ -21,7 +25,13 @@ var hostingPlanName = uniqueName
 var appInsightsName = uniqueName
 var functionAppName = uniqueName
 var keyvaultName = uniqueNameWithoutDashes
-var logAnalyticsWorkspaceName = 'logAnalytics'
+
+// allows to publish policy states to LA
+var monitoringMetricsPublisherRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
+// allows reading reading resources
+var readerRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
+// allows to read subsciption id and rg name from Blob storage
+var storageBlobReaderRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   name: storageAccountName
@@ -29,6 +39,17 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   kind: 'StorageV2'
   sku: {
     name: 'Standard_LRS'
+  }
+}
+
+// update later to have correct fields
+resource storageAccountTable 'Microsoft.Storage/storageAccounts/tableServices@2022-09-01' = {
+  name: storageAccountTableName
+  parent: storageAccount
+  properties: {
+    cors: {
+      corsRules: []
+    }
   }
 }
 
@@ -64,26 +85,32 @@ resource keyvault 'Microsoft.KeyVault/vaults@2021-10-01' = {
 }
 
 resource secretClientId 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/spClientId'
+  parent: keyvault
+  name: 'spClientId'
   properties: {
     value: spClientId
   }
 }
+
 resource secretClientSecret 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/spClientSecret'
+  parent: keyvault
+  name: 'spClientSecret'
   properties: {
     value: spClientSecret
   }
 }
+
 resource secretTenantId 'Microsoft.KeyVault/vaults/secrets@2021-10-01' = {
-  name: '${keyvault.name}/spTenantId'
+  parent: keyvault
+  name: 'spTenantId'
   properties: {
     value: spTenantId
   }
 }
 
 resource accessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2021-10-01' = {
-  name: '${keyvault.name}/add'
+  parent: keyvault
+  name: 'add'
   properties: {
     accessPolicies: [
       {
@@ -110,6 +137,63 @@ resource hostingPlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   sku: {
     name: 'Y1'
     tier: 'Dynamic'
+  }
+}
+
+resource policyStatesDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2021-09-01-preview' = {
+  name: 'policyStatesDataCollectionEndpoint'
+  location: location
+  properties: {}
+}
+
+resource policyStatesDataCollectionRule 'Microsoft.Insights/dataCollectionRules@2021-09-01-preview' = {
+  name: 'policyStatesDataCollectionRule'
+  location: location
+  properties: {
+    dataCollectionEndpointId: policyStatesDataCollectionEndpoint.id
+    streamDeclarations: {
+      '${streamDeclaration}': {
+        columns: [
+          {
+            name: 'Policy_assignment_id'
+            type: 'string'
+          }
+          {
+            name: 'Policy_assignment_name'
+            type: 'string'
+          }
+          {
+            name: 'Is_compliant'
+            type: 'boolean'
+          }
+          {
+            name: 'TimeGenerated'
+            type: 'datetime'
+          }
+        ]
+      }
+    }
+    dataSources: {}
+    destinations: {
+      logAnalytics: [
+        {
+          workspaceResourceId: logAnalyticsWorkspaceId
+          name: logAnalyticsWorkspaceName
+        }
+      ]
+    }
+    dataFlows: [
+      {
+        streams: [
+          streamDeclaration
+        ]
+        destinations: [
+          logAnalyticsWorkspaceName
+        ]
+        transformKql: 'source'
+        outputStream: streamDeclaration
+      }
+    ]
   }
 }
 
@@ -166,67 +250,51 @@ resource function 'Microsoft.Web/sites@2021-03-01' = {
           name: 'AZURE_TENANT_ID'
           value: '@Microsoft.KeyVault(SecretUri=${secretTenantId.properties.secretUriWithVersion})'
         }
-      ]
-    }
-  }
-}
-
-resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
-  name: logAnalyticsWorkspaceName
-  location: location
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-  }
-}
-
-// action groups
-resource actionGroupAlerts 'Microsoft.Insights/actionGroups@2022-06-01' = {
-  name: 'actionGroup'
-  location: 'global'
-  properties: {
-    enabled: true
-    groupShortName: 'shortNsme'
-    emailReceivers: [
-      {
-        emailAddress: 'your@email.com'
-        name: 'myname'
-        useCommonAlertSchema: false
-      }
-    ]
-  }
-}
-
-// non compliance policy
-resource nonCompliantPoliciesAlert 'Microsoft.Insights/scheduledQueryRules@2022-06-15' = {
-  name: 'nonCompliantPoliciesAlert'
-  location: location
-  kind: 'LogAlert'
-  properties: {
-    actions: {
-      actionGroups: actionGroupAlerts.id //
-    }
-    criteria: {
-      allOf: [
         {
-          operator: 'LessThanOrEqual'
-          query: 'PolicyComplianceStates_CL | summarize arg_max(TimeGenerated,*) by Policy_assignment_id | where Is_compliant==false'
-          threshold: 0
-          timeAggregation: 'Count'
+          name: 'DATA_COLLECTION_ENDPOINT'
+          value: policyStatesDataCollectionEndpoint.properties.logsIngestion.endpoint
+        }
+        {
+          name: 'DATA_COLLECTION_IMMUTABLE_ID'
+          value: policyStatesDataCollectionRule.properties.immutableId
+        }
+        {
+          name: 'STREAM_NAME'
+          value: streamName
+        }
+        {
+          name: 'TABLE_NAME'
+          value: storageAccountTableName
         }
       ]
     }
-    displayName: 'Non-compliant policies'
-    enabled: true
-    evaluationFrequency: 'PT1M'
-    scopes: [
-      logAnalyticsWorkspace.id
-    ]
-    severity: 1
-    windowSize: 'PT5M'
   }
 }
 
-output functionAppName string = function.name
+resource policyIdentityReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid('policyIdentityReader', resourceGroup().id)
+  properties: {
+    principalId: function.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: readerRole
+  }
+}
+
+resource monitoringMetricsPublisher 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid('monitoringMetricsPublisher', resourceGroup().id)
+  properties: {
+    principalId: function.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: monitoringMetricsPublisherRole
+  }
+}
+
+resource storageBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageAccount
+  name: guid('storageBlobReader', resourceGroup().id)
+  properties: {
+    principalId: function.identity.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: storageBlobReaderRole
+  }
+}

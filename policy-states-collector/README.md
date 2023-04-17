@@ -1,12 +1,19 @@
 # Policy states collector
 
-The policy states collector application queries the state of the Azure Policies deployed with the Marketplace managed applications.
-Then it sends their compliance states to the policy monitor table in the Log Analytics workspace (which is also deployed into the customers subscription by the marketplace offer). Additionaly, alert will be triggered if a policy is non-compliant.
+The functionality that allows publishers to access and manage deployed customers managed application is the foundation upon which the entire solution is built.
+
+The time-triggered Azure Function application, policy states collector, uses Azure APIs to query the latest state of Azure policies in managed applications. To build the correct request, the application retrieves the Resource Group name and subscription ID from Azure Blob Storage. The application leverages the Service Principal, which is configured in the Managed App plan, to access managed resource policies.
+
+After retrieving the data, the application filters and sends it to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring and analysis. It filters only the policies deployed by the Managed Application to ensure that no customers policies are pulled.
+
+Finally, the Scheduled Query Rule Alert is configured to monitor non-compliant policies and triggers an Action Group for notification when an issue is detected.
+
+This solution offers automated monitoring of Azure policies for compliance, allowing for proactive identification and resolution of policy violations.  
 
 ## Authentication
 
-The function source code is written in Python and relies on the [`DefaultAzureCredential()`](https://docs.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet)
-class for authentication to Azure. Locally, it will use the AZ CLI credentials;
+The function source code is written in Python and relies on the [`ClientSecretCredential()`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.clientsecretcredential?view=azure-dotnet) and [`ManagedIdentityCredential()`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.managedidentitycredential?view=azure-dotnet)
+classes for authentication to Azure.
 
 Azure function has system assigned identity and two roles that allow read policies and write data to Log Analytics.
 
@@ -42,24 +49,6 @@ This will create `local.settings.json` file with all envs.
 Last step is assign correct role for DataCollectionRule. Go to `Monitor > Data Collection Rules` and find your DCR. In `Acess Contorole` add role `Monitoring Metrics Publisher` to your account.
 
 Run the function with `func start` command provided by the Azure Functions runtime.
-
-## Run tests
-
-Unit tests are defined in the `PolicyStates/test_func.py` file. You can easily run them with pytest.
-
-```bash
-$ pip install pytest
-...
-$ pytest PolicyStates
-================================================= test session starts ==================================================
-platform linux -- Python 3.9.10, pytest-7.1.1, pluggy-1.0.0
-rootdir: /home/user/projects/notification-endpoint
-collected 10 items
-
-PolicyStates/test_func.py ..........                                                                      [100%]
-
-================================================== 10 passed in 0.15s ==================================================
-```
 
 ## Useful links
 

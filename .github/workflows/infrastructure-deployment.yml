@@ -1,0 +1,64 @@
+name: Notification Endpoint
+# description: Deploys the Notification Endpoint infrastructure and code
+
+on:
+  workflow_dispatch:
+
+env:
+  APP_NAME: 'marketplace-apps'
+
+concurrency:
+  # Serializing this workflow.
+  group: ${{ github.workflow }}
+
+jobs:
+  infra:
+    name: Deploy infrastructure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: 'Az CLI login'
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+
+      - name: Set subscription
+        run: |
+          az account set -s ${{ vars.SUBSCRIPTION_NAME  }}
+
+      - name: Get git short sha
+        run: |
+          echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - uses: supplypike/setup-bin@v3
+        name: Install bicep
+        with:
+          uri: https://github.com/Azure/bicep/releases/download/v0.15.31/bicep-linux-x64
+          name: bicep
+          version: "0.15.31"
+
+      - name: Build Bicep templates
+        working-directory: ./azure
+        run: |
+          bicep build main.bicep
+
+      - name: Create resource group
+        run: |
+          az group create \
+            -n ${{ vars.RESOURCE_GROUP_NAME }} \
+            -l ${{ vars.LOCATION }}
+
+      - name: Deploy infrastructure template
+        uses: azure/arm-deploy@v1
+        id: deploy
+        with:
+          scope: "resourcegroup"
+          resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME }}
+          template: ./azure/main.json
+          parameters: >
+            appName=${{ env.APP_NAME }}
+            spClientId=${{ secrets.SP_CLIENT_ID }}
+            spClientSecret=${{ secrets.SP_CLIENT_SECRET }}
+            spTenantId=${{ secrets.SP_TENANT_ID }}
+          deploymentName: git-${{ env.SHA_SHORT }}
