@@ -1,48 +1,19 @@
-name: Code deployment
-# description: Deploys Notification Endpoint and Policy States code
+name: Infrastructure deployment
+# description: Deploys the infrastructure for apps
 
 on:
   workflow_dispatch:
-    inputs:
-      functionAppName:
-        description: "function app name that was created by infrastructure deployment workflow"
-        required: true
-        type: string
+
 env:
-  PYTHON_VERSION: "3.9"
+  APP_NAME: 'marketplace-apps'
 
 concurrency:
   # Serializing this workflow.
   group: ${{ github.workflow }}
 
 jobs:
-  test:
-    name: Test NotificationHandler function app
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-          cache-dependency-path: 'applications/requirements.txt'
-
-      - name: Install dependencies
-        working-directory: ./applications
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-          pip install -r requirements.txt
-
-      - name: Test with pytest
-        working-directory: ./applications
-        run: |
-          pytest NotificationHandler -v
-
-  app:
-    name: Deploy function apps
+  infra:
+    name: Deploy infrastructure
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -54,32 +25,48 @@ jobs:
 
       - name: Set subscription
         run: |
-          az account set -s ${{ vars.SUBSCRIPTION_NAME }}
+          az account set -s ${{ vars.SUBSCRIPTION_NAME  }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Resolve function dependencies
-        working-directory: ./applications
+      - name: Get git short sha
         run: |
-          python -m pip install --upgrade pip
-          pip install pytest
-          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+          echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-      - name: Deploy apps
-        uses: Azure/functions-action@v1
+      - uses: supplypike/setup-bin@v3
+        name: Install bicep
         with:
-          app-name: ${{ github.event.inputs.functionAppName }}
-          package: ./applications
+          uri: https://github.com/Azure/bicep/releases/download/v0.15.31/bicep-linux-x64
+          name: bicep
+          version: "0.15.31"
 
-      - name: Show function invoke URL
+      - name: Build Bicep templates
+        working-directory: ./azure
         run: |
-          invoke_url=$(az functionapp function show \
-            -g ${{ vars.RESOURCE_GROUP_NAME }} \
-            -n ${{ github.event.inputs.functionAppName }} \
-            --function-name NotificationHandler \
-            -o tsv --query invokeUrlTemplate)
+          bicep build main.bicep
 
-          echo "✅ Function invoke URL: $invoke_url"
+      - name: Delete resource group
+        working-directory: ./azure
+        run: |
+          az group delete --name ${{ vars.RESOURCE_GROUP_NAME }} --yes --subscription ${{ secrets.SUBSCRIPTION_ID }} || true
+          az group wait --name ${{ vars.RESOURCE_GROUP_NAME }} --deleted
+
+      - name: Create resource group
+        run: |
+          az group create \
+            -n ${{ vars.RESOURCE_GROUP_NAME }} \
+            -l ${{ vars.LOCATION }}
+
+      - name: Deploy infrastructure template
+        uses: azure/arm-deploy@v1
+        id: deploy
+        with:
+          scope: "resourcegroup"
+          resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME }}
+          template: ./azure/main.json
+          parameters: >
+            appName=${{ env.APP_NAME }}
+            spClientId=${{ secrets.SP_CLIENT_ID }}
+            spClientSecret=${{ secrets.SP_CLIENT_SECRET }}
+            spTenantId=${{ secrets.SP_TENANT_ID }}
+          deploymentName: git-${{ env.SHA_SHORT }}
+
+        # print function app name
