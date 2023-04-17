@@ -135,3 +135,5 @@ module policyStatesCollectorFunction 'function.bicep' = {
     containerLogTable
   ]
 }
+
+output policyStatesCollectorFunctionName string = policyStatesCollectorFunction.outputs.functionAppName

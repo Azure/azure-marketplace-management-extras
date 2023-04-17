@@ -69,4 +69,6 @@ jobs:
             spTenantId=${{ secrets.SP_TENANT_ID }}
           deploymentName: git-${{ env.SHA_SHORT }}
 
-        # print function app name
+      - name: Show function name
+        run: |
+          echo "✅ Function name:  ${{ steps.deploy.outputs.policyStatesCollectorFunctionName }}"

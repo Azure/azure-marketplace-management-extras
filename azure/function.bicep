@@ -298,3 +298,5 @@ resource storageBlobReader 'Microsoft.Authorization/roleAssignments@2022-04-01' 
     roleDefinitionId: storageBlobReaderRole
   }
 }
+
+output functionAppName string = functionAppName
