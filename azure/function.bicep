@@ -28,7 +28,7 @@ var keyvaultName = uniqueNameWithoutDashes
 
 // allows to publish policy states to LA
 var monitoringMetricsPublisherRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
-// allows reading reading resources
+// allows reading resources
 var readerRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'acdd72a7-3385-48ef-bd42-f606fba81ae7')
 // allows to read subsciption id and rg name from Blob storage
 var storageBlobReaderRole = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')

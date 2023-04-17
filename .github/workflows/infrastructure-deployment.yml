@@ -1,5 +1,5 @@
-name: Notification Endpoint
-# description: Deploys the Notification Endpoint infrastructure and code
+name: Infrastructure deployment
+# description: Deploys the infrastructure for apps
 
 on:
   workflow_dispatch:
@@ -42,6 +42,12 @@ jobs:
         working-directory: ./azure
         run: |
           bicep build main.bicep
+
+      - name: Delete resource group
+        working-directory: ./azure
+        run: |
+          az group delete --name ${{ vars.RESOURCE_GROUP_NAME }} --yes --subscription ${{ secrets.SUBSCRIPTION_ID }} || true
+          az group wait --name ${{ vars.RESOURCE_GROUP_NAME }} --deleted
 
       - name: Create resource group
         run: |

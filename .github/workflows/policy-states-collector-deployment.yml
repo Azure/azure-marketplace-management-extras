@@ -1,5 +1,5 @@
 name: Policy States Collector
-# description: Tests and deploys the Policy States Collector code
+# description: Deploys the Policy States Collector code
 
 on:
   workflow_dispatch:
