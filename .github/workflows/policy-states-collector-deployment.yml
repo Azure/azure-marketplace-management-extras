@@ -48,13 +48,3 @@ jobs:
         with:
           app-name: ${{ github.event.inputs.functionAppName }}
           package: ./policy-states-collector
-
-      - name: Show function invoke URL
-        run: |
-          invoke_url=$(az functionapp function show \
-            -g ${{ vars.RESOURCE_GROUP_NAME }} \
-            -n ${{ github.event.inputs.functionAppName }} \
-            --function-name PolicyStates \
-            -o tsv --query invokeUrlTemplate)
-
-          echo "✅ Function invoke URL: $invoke_url"

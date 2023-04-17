@@ -44,7 +44,6 @@ jobs:
   app:
     name: Deploy function app
     runs-on: ubuntu-latest
-    needs: [infra]
     steps:
       - uses: actions/checkout@v3
 
