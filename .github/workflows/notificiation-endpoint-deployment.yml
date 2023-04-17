@@ -48,9 +48,13 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Login to Azure
+      - name: 'Az CLI login'
+        uses: azure/login@v1
+        with:
+          creds: '{"clientId":"${{ secrets.CLIENT_ID }}","clientSecret":"${{ secrets.CLIENT_SECRET }}","subscriptionId":"${{ secrets.SUBSCRIPTION_ID }}","tenantId":"${{ secrets.TENANT_ID }}"}'
+
+      - name: Set subscription
         run: |
-          az login --identity -u ${{ changeme }}
           az account set -s ${{ vars.SUBSCRIPTION_NAME }}
 
       - name: Set up Python
