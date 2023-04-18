@@ -121,22 +121,30 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     # You can check all the Application object attributes here:
     # https://github.com/Azure/azure-sdk-for-python/blob/830ccf6ab129bdd6b7343cfae39e4e8e4b3bfd4d/sdk/resources/azure-mgmt-resource/azure/mgmt/resource/managedapplications/models/_models_py3.py#L191
     logging.info(app_details)
-    details_managed_resource_group_id = app_details.managed_resource_group_id.split("/")
 
-    entity = {
-            "subscription_id": details_managed_resource_group_id[2],
-            "resource_group_name": details_managed_resource_group_id[4],
-            "PartitionKey":  details_managed_resource_group_id[2],
-            "RowKey": details_managed_resource_group_id[4]
-        }
+    if provisioning_state == "Succeeded" and event_type == "PUT":
+        details_managed_resource_group_id = app_details.managed_resource_group_id.split("/")
 
-    with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
-            table_client = table_service_client.create_table_if_not_exists(table_name=TABLE_NAME)
-            logging.info("Table name: {}".format(table_client.table_name))
-            try:
-                resp = table_client.create_entity(entity=entity)
-                logging.info(resp)
-            except ResourceExistsError:
-                logging.error("Entity already exists")
+        entity = {
+                "subscription_id": details_managed_resource_group_id[2],
+                "resource_group_name": details_managed_resource_group_id[4],
+                "PartitionKey":  details_managed_resource_group_id[2],
+                "RowKey": details_managed_resource_group_id[4]
+            }
+
+        with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
+                table_client = table_service_client.create_table_if_not_exists(table_name=TABLE_NAME)
+                logging.info("Table name: {}".format(table_client.table_name))
+                try:
+                    resp = table_client.create_entity(entity=entity)
+                    logging.info(resp)
+                except ResourceExistsError:
+                    logging.error("Entity already exists")
+
+    if provisioning_state == "Deleted" and event_type == "DELETE":
+        details_managed_resource_group_id = app_details.managed_resource_group_id.split("/")
+        with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
+            table_client.delete_entity(row_key=details_managed_resource_group_id[4], partition_key=details_managed_resource_group_id[2])
+            logging.info("Successfully deleted")
 
     return func.HttpResponse("OK", status_code=200)
