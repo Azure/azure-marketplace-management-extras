@@ -4,9 +4,6 @@ name: Infrastructure deployment
 on:
   workflow_dispatch:
 
-env:
-  APP_NAME: 'marketplace'
-
 concurrency:
   # Serializing this workflow.
   group: ${{ github.workflow }}
@@ -63,10 +60,11 @@ jobs:
           resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME }}
           template: ./azure/main.json
           parameters: >
-            appName=${{ env.APP_NAME }}
+            appName=${{ vars.APP_NAME }}
             spClientId=${{ secrets.SP_CLIENT_ID }}
             spClientSecret=${{ secrets.SP_CLIENT_SECRET }}
             spTenantId=${{ secrets.SP_TENANT_ID }}
+            storageAccountTableName=${{ vars.STORAGE_ACCOUNT_TABLE_NAME }}
           deploymentName: git-${{ env.SHA_SHORT }}
 
       - name: Show function name

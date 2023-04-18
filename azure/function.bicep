@@ -42,17 +42,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
   }
 }
 
-// update later to have correct fields
-resource storageAccountTable 'Microsoft.Storage/storageAccounts/tableServices@2022-09-01' = {
-  name: storageAccountTableName
-  parent: storageAccount
-  properties: {
-    cors: {
-      corsRules: []
-    }
-  }
-}
-
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: appInsightsName
   location: location
