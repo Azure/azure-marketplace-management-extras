@@ -8,8 +8,7 @@ from azure.mgmt.resource import ApplicationClient
 from azure.data.tables import TableServiceClient
 from azure.core.exceptions import ResourceExistsError
 
-CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
-TABLE_NAME = str(os.environ["TABLE_NAME"])
+
 
 def parse_application_id(resource_id: str):
     pattern = (
@@ -27,6 +26,9 @@ def parse_application_id(resource_id: str):
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
+    TABLE_NAME = str(os.environ["TABLE_NAME"])
+
     logging.info("Received webhook call from marketplace deployment")
 
     # Azure will only send POST requests

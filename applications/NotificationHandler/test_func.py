@@ -40,7 +40,8 @@ class TestFunction(unittest.TestCase):
     }
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_ignore_get_method(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_ignore_get_method(self, os_env, mock_credential):
         req = func.HttpRequest(method="GET", url="/api/resource", body=None)
         resp = main(req)
         self.assertEqual(
@@ -49,7 +50,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_ignore_put_method(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_ignore_put_method(self, os_env, mock_credential):
         req = func.HttpRequest(method="PUT", url="/api/resource", body=None)
         resp = main(req)
         self.assertEqual(
@@ -58,7 +60,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_ignore_delete_method(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_ignore_delete_method(self, os_env, mock_credential):
         req = func.HttpRequest(method="DELETE", url="/api/resource", body=None)
         resp = main(req)
         self.assertEqual(
@@ -67,7 +70,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_ignore_patch_method(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_ignore_patch_method(self, os_env, mock_credential):
         req = func.HttpRequest(method="PATCH", url="/api/resource", body=None)
         resp = main(req)
         self.assertEqual(
@@ -76,7 +80,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_invalid_nonjson_payload(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_invalid_nonjson_payload(self, os_env, mock_credential):
         req = func.HttpRequest(method="post", url="/api/resource", body="foobar")
         resp = main(req)
         self.assertIn(
@@ -89,7 +94,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_failed_put_event(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_failed_put_event(self, os_env, mock_credential):
         json_body = json.dumps(self.failed_event)
         req = func.HttpRequest(
             method="post",
@@ -111,7 +117,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_failed_delete_event(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_failed_delete_event(self, os_env, mock_credential):
         body = self.failed_event.copy()
         body["eventType"] = "DELETE"
         json_body = json.dumps(body)
@@ -135,7 +142,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_accepted_state(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_accepted_state(self, os_env, mock_credential):
         body = self.succeeded_event.copy()
         body["provisioningState"] = "Accepted"
         json_body = json.dumps(body)
@@ -155,7 +163,8 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    def test_deleting_state(self, mock_credential):
+    @patch("NotificationHandler.os")
+    def test_deleting_state(self, os_env, mock_credential):
         body = self.succeeded_event.copy()
         body["provisioningState"] = "Deleting"
         json_body = json.dumps(body)
@@ -176,7 +185,9 @@ class TestFunction(unittest.TestCase):
 
     @patch("NotificationHandler.DefaultAzureCredential")
     @patch("NotificationHandler.ApplicationClient")
-    def test_succeeded_state(self, mock_client, mock_credential):
+    @patch("NotificationHandler.os")
+    @patch("NotificationHandler.TableServiceClient")
+    def test_succeeded_state(self, table_client_mock, os_env, mock_client, mock_credential):
         json_body = json.dumps(self.succeeded_event)
         req = func.HttpRequest(
             method="post",
