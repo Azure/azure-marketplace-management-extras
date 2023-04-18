@@ -1,7 +1,8 @@
 # Overview
 
-This project contains Azure function with two applications that allow automatically keep track of deployed Managed applications. More details about each function you can find in applications/README.
-These reusable functions were created during development of [Managed Application offer](https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/overview) and could be used as a starting point for others.
+This project features an Azure Function consisting of two applications designed to automatically track deployed Managed Applications. For further information about each function, please refer to the README file located in the `applications` directory.
+
+These functions were created as part of the development process for the Managed Application offer and are highly reusable, making them an excellent starting point for others looking to build similar solutions.
 
 ## Repository content
 
