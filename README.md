@@ -1,7 +1,15 @@
 # Overview
 
-This project contains Azure function with two applications that allow automatically keep track of deployed Managed applications. More details about each function you can find in their README.
-These reusable functions were created during deployment of Managed Application offer.
+This project contains Azure function with two applications that allow automatically keep track of deployed Managed applications. More details about each function you can find in applications/README.
+These reusable functions were created during development of [Managed Application offer](https://learn.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/overview) and could be used as a starting point for others.
+
+## Repository content
+
+Within this repository, you can find the following directories:
+
+- `.github/workflows`: automated workflows to deploy infrastructure and code.
+- `azure`: infrastructure templates that deploy the Azure components needed to support applications.
+- `applications`: code and documentation describing each application in more details.
 
 ## Contributing
 
