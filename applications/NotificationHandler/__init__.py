@@ -11,22 +11,18 @@ from azure.core.exceptions import ResourceExistsError
 
 
 def parse_application_id(resource_id: str):
-    pattern = (
-        r"\/?subscriptions\/(?P<subscription_id>[0-9a-z-]*)\/resourceGroups\/(?P<resource_group>[a-zA-Z0-9-_.()]*)\/providers\/"
-        r"Microsoft\.Solutions\/applications\/(?P<application_name>[a-zA-Z0-9-_.()]*)$"
-    )
+    pattern = r"\/?subscriptions\/(?P<subscription_id>[0-9a-z-]*)\/resourceGroups\/(?P<resource_group>[a-zA-Z0-9-_.()]*)"
     m = re.match(pattern, resource_id)
     if not m:
         raise ValueError("Could not parse application id")
     return (
         m.group("subscription_id"),
-        m.group("resource_group"),
-        m.group("application_name"),
+        m.group("resource_group")
     )
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
+    CONNECTION_STRING = str(os.environ["AzureWebJobsStorage2"])
     TABLE_NAME = str(os.environ["TABLE_NAME"])
 
     logging.info("Received webhook call from marketplace deployment")
@@ -67,7 +63,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         (
             client_subscription_id,
             client_resource_group,
-            application_name,
         ) = parse_application_id(application_id)
     except ValueError as e:
         msg = f"Error obtaining client subscription and resource group: {e}"
@@ -78,7 +73,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         f"""
         event_type={event_type},
         provisioning_state={provisioning_state},
-        application_name={application_name},
         client_subscription_id={client_subscription_id},
         client_resource_group={client_resource_group}
         """
@@ -101,13 +95,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.error(msg)
         return func.HttpResponse(msg, status_code=200)
 
-    # Ignore other provisioning states such as Accepted and Deleting.
-    if provisioning_state != "Succeeded":
+    # Ignore the Accepted provisioning state
+    if provisioning_state == "Accepted":
         msg = f"Provisioning state is '{provisioning_state}'. Ignoring..."
         logging.info(msg)
         return func.HttpResponse(msg, status_code=200)
 
-    # If the provisioning state is Succeeded, obtain the managed application details
+    # If the provisioning state is Succeeded or Deleted, obtain the managed application details
     try:
         app_client = ApplicationClient(credential, client_subscription_id)
         app_details = app_client.applications.get_by_id(application_id)
@@ -123,13 +117,28 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info(app_details)
 
     if provisioning_state == "Succeeded" and event_type == "PUT":
-        details_managed_resource_group_id = app_details.managed_resource_group_id.split("/")
+        try:
+            (
+                app_subscription_id,
+                app_resource_group
+            ) = parse_application_id(app_details.managed_resource_group_id)
+            logging.info(
+                f"""
+                event_type={event_type},
+                app_subscription_id={app_subscription_id},
+                app_resource_group={app_resource_group}
+                """
+            )
+        except ValueError as e:
+            msg = f"Error obtaining managed application subscription id and resource group: {e}"
+            logging.error(msg)
+            return func.HttpResponse(msg, status_code=500)
 
         entity = {
-                "subscription_id": details_managed_resource_group_id[2],
-                "resource_group_name": details_managed_resource_group_id[4],
-                "PartitionKey":  details_managed_resource_group_id[2],
-                "RowKey": details_managed_resource_group_id[4]
+                "subscription_id": app_subscription_id,
+                "resource_group_name": app_resource_group,
+                "PartitionKey":  app_subscription_id,
+                "RowKey": app_resource_group
             }
 
         with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
@@ -142,9 +151,25 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     logging.error("Entity already exists")
 
     if provisioning_state == "Deleted" and event_type == "DELETE":
-        details_managed_resource_group_id = app_details.managed_resource_group_id.split("/")
+        try:
+            (
+                app_subscription_id,
+                app_resource_group
+            ) = parse_application_id(app_details.managed_resource_group_id)
+            logging.info(
+                f"""
+                event_type={event_type},
+                app_subscription_id={app_subscription_id},
+                app_resource_group={app_resource_group}
+                """
+            )
+        except ValueError as e:
+            msg = f"Error obtaining managed application subscription id and resource group: {e}"
+            logging.error(msg)
+            return func.HttpResponse(msg, status_code=500)
+
         with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
-            table_client.delete_entity(row_key=details_managed_resource_group_id[4], partition_key=details_managed_resource_group_id[2])
+            table_client.delete_entity(row_key=app_resource_group, partition_key=app_subscription_id)
             logging.info("Successfully deleted")
 
     return func.HttpResponse("OK", status_code=200)
