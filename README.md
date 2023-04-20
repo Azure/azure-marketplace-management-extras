@@ -12,6 +12,40 @@ Within this repository, you can find the following directories:
 - `azure`: infrastructure templates that deploy the Azure components needed to support applications.
 - `applications`: code and documentation describing each application in more details.
 
+## Deployment
+
+This project is a starting point to monitor your Managed Application offer created in [Partner center]<https://partner.microsoft.com/>. It is ?expectable? that you have already created your offer.
+
+1. Set up your managed app Service Principal:
+
+In the home page, navigate to market place offers > [your offer] > [your managed plane] > Plan overview > Technical configuration
+
+In the Authorizations section, create a Service Principal with the owner role that will have access to Managed applications.   Note down the Service Principal information from the Partner Center portal.(Partner Center (microsoft.com)), we’ll use this in next step
+
+1. Follow this [doc](https://learn.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli) to Create the Service Principal (SP) which will log in into Azure for creating infrastructure
+
+1. Give Owner role to your created SP from previous step by using [this guidance](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli)
+
+1. Copy whole repo into your github project.
+
+1. Add below secrets [your github repo] > Settings > Secrets and varibles > New repository secret
+SP credentials from previous step `CLIENT_ID, CLIENT_SECRET, SUBSCRIPTION_ID` and `TENANT_ID`
+SP from Managed application offer `SP_CLIENT_ID` and `SP_CLIENT_SECRET`
+
+1. Add varibles in Varibles section > New repository varibles (next to Secrets section from previous step).
+
+`APP_NAME` eg marketplace
+`LOCATION` eg northeurope
+`RESOURCE_GROUP_NAME` eg marketplace-manage-applications
+`STORAGE_ACCOUNT_TABLE_NAME` eg marketplace-manage-applications
+`SUBSCRIPTION_NAME` your subscription name where github SP was created
+
+1. Everything is pre configured and ready to run `.github/workflows/infrastructure-deployment.yml`. Go to Actions > i
+Infrastructure deployment > Run workflow
+After the workflow is finished, copy function name from logs in `Show function name` step
+
+1. Deploy code by running Code deployment workflow. Input function name that you copied from previous step.
+
 ## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
