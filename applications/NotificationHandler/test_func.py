@@ -39,6 +39,19 @@ class TestFunction(unittest.TestCase):
         },
     }
 
+    deleted_event = {
+        "eventType": "DELETE",
+        "applicationId": "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test/providers/Microsoft.Solutions/applications/test3",
+        "eventTime": "2022-03-14T19:20:08.1707163Z",
+        "provisioningState": "Deleted",
+        "plan": {
+            "name": "msft-insights-poc-managed",
+            "product": "msft-insights-poc-preview",
+            "publisher": "test_test_agcicemarketplace1616064700629",
+            "version": "0.1.20",
+        }
+    }
+
     @patch("NotificationHandler.DefaultAzureCredential")
     @patch("NotificationHandler.os")
     def test_ignore_get_method(self, os_env, mock_credential):
@@ -184,22 +197,49 @@ class TestFunction(unittest.TestCase):
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
-    @patch("NotificationHandler.ApplicationClient")
     @patch("NotificationHandler.os")
     @patch("NotificationHandler.TableServiceClient")
-    def test_succeeded_state(self, table_client_mock, os_env, mock_client, mock_credential):
-        json_body = json.dumps(self.succeeded_event)
-        req = func.HttpRequest(
-            method="post",
-            url="/api/resource",
-            body=json_body.encode(),
-        )
-        resp = main(req)
-        self.assertEqual(
-            b"OK",
-            resp.get_body(),
-        )
-        self.assertEqual(
-            resp.status_code,
-            200,
-        )
+    def test_succeeded_state(self, table_client_mock, os_env, mock_credential):
+        with patch("NotificationHandler.ApplicationClient.applications") as mock_application_client:
+            mock_application_client.get_by_id.return_value = {
+                    "managed_resource_group_id": "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test"
+                }
+            json_body = json.dumps(self.succeeded_event)
+            req = func.HttpRequest(
+                method="post",
+                url="/api/resource",
+                body=json_body.encode(),
+            )
+            resp = main(req)
+            self.assertEqual(
+                b"OK",
+                resp.get_body(),
+            )
+            self.assertEqual(
+                resp.status_code,
+                200,
+            )
+
+    @patch("NotificationHandler.DefaultAzureCredential")
+    @patch("NotificationHandler.os")
+    @patch("NotificationHandler.TableServiceClient")
+    def test_deleted_state(self, table_client_mock, os_env, mock_credential):
+        with patch("NotificationHandler.ApplicationClient.applications") as mock_application_client:
+            mock_application_client.get_by_id.return_value = {
+                    "managed_resource_group_id": "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test"
+                }
+            json_body = json.dumps(self.deleted_event)
+            req = func.HttpRequest(
+                method="post",
+                url="/api/resource",
+                body=json_body.encode(),
+            )
+            resp = main(req)
+            self.assertEqual(
+                b"OK",
+                resp.get_body(),
+            )
+            self.assertEqual(
+                resp.status_code,
+                200,
+            )

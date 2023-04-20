@@ -22,7 +22,7 @@ def parse_application_id(resource_id: str):
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    CONNECTION_STRING = str(os.environ["AzureWebJobsStorage2"])
+    CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
     TABLE_NAME = str(os.environ["TABLE_NAME"])
 
     logging.info("Received webhook call from marketplace deployment")
@@ -96,7 +96,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(msg, status_code=200)
 
     # Ignore the Accepted provisioning state
-    if provisioning_state == "Accepted":
+    if provisioning_state == "Accepted" or provisioning_state == "Deleting":
         msg = f"Provisioning state is '{provisioning_state}'. Ignoring..."
         logging.info(msg)
         return func.HttpResponse(msg, status_code=200)
@@ -121,7 +121,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             (
                 app_subscription_id,
                 app_resource_group
-            ) = parse_application_id(app_details.managed_resource_group_id)
+            ) = parse_application_id(app_details["managed_resource_group_id"])
             logging.info(
                 f"""
                 event_type={event_type},
@@ -142,10 +142,10 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             }
 
         with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
-                table_client = table_service_client.create_table_if_not_exists(table_name=TABLE_NAME)
-                logging.info("Table name: {}".format(table_client.table_name))
+                table_response = table_service_client.create_table_if_not_exists(table_name=TABLE_NAME)
+                logging.info("Table name: {}".format(table_response.table_name))
                 try:
-                    resp = table_client.create_entity(entity=entity)
+                    resp = table_service_client.create_entity(entity=entity)
                     logging.info(resp)
                 except ResourceExistsError:
                     logging.error("Entity already exists")
@@ -155,7 +155,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             (
                 app_subscription_id,
                 app_resource_group
-            ) = parse_application_id(app_details.managed_resource_group_id)
+            ) = parse_application_id(app_details["managed_resource_group_id"])
             logging.info(
                 f"""
                 event_type={event_type},
@@ -169,7 +169,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse(msg, status_code=500)
 
         with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
-            table_client.delete_entity(row_key=app_resource_group, partition_key=app_subscription_id)
+            table_service_client.delete_entity(row_key=app_resource_group, partition_key=app_subscription_id)
             logging.info("Successfully deleted")
 
     return func.HttpResponse("OK", status_code=200)
