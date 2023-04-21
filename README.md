@@ -35,7 +35,7 @@ Follow these steps to create a Service Principal with the `Owner` role scoped to
 
 This Service Principal will be used by Azure function applications (NotificationHandler and PolicyStates) to authenticate against customers' deployments and fetch needed Managed app information.
 
-- Create another Service principal by using instructions from previous step [Create Azure Service Principal](#create-azure-service-principal) section without the last step (granting the Service Principal owner role).
+- Create another Service principal by using instructions from previous step [Create Azure Service Principal](#create-the-azure-service-principal) section without the last step (granting the Service Principal owner role).
 
 - Link this Service principal in Partner center by going to [Partner center](https://partner.microsoft.com/) and then Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
 
@@ -52,9 +52,9 @@ For each of the secrets defined in the table below, follow these steps to add ea
 | Secret Name              | Example Value                        | Description |
 | ------------------------ | ------------------------------------ | ----------- |
 | SUBSCRIPTION_ID | 3edb65d1-d7a8-409b-a320-3c01ac6825f9 | Subscription ID where infra will be deployed. |
-| CLIENT_ID    | 9505fb9a-96e6-46d1-ac9b-2f74ee57f6d6 | Client ID from the [Create the Azure Service Principaln](#create-azure-service-principal) |
+| CLIENT_ID    | 9505fb9a-96e6-46d1-ac9b-2f74ee57f6d6 | Client ID from the [Create the Azure Service Principaln](#create-the-azure-service-principal) |
 | CLIENT_SECRET | [secure string] | Client Secret from the [Create the Azure Service Principal](#create-service-principal) |
-| TENANT_ID    | f7d23806-d8ac-4576-814f-0ee931ffeab3 | Azure AD Tenant ID from the [Create the Azure Service Principal](#create-azure-service-principal) |
+| TENANT_ID    | f7d23806-d8ac-4576-814f-0ee931ffeab3 | Azure AD Tenant ID from the [Create the Azure Service Principal](#create-the-azure-service-principal) |
 | SP_CLIENT_ID    | 9505fb9a-96e6-46d1-ac9b-2f74ee57f6d6 | Manage app Client ID from the [Configure the Managed Application service principal](#configure-the-managed-application-service-principal) |
 | SP_CLIENT_SECRET | [secure string] | Managed app Client Secret from the [Configure the Managed Application service principal](#configure-the-managed-application-service-principal) |
 
@@ -85,7 +85,8 @@ Follow these steps to run workflows which will deploy the infrastructure and cod
 
 Once all Workflows have completed, navigate to Resource group `marketplace-manage-applications`. Select Azure function and click on `Functions`. You should see `NotificationHandler` and `PolicyStates`. Each functions has logs that can indicate the status. You can find them in `Monitor` section.
 
-You can also....
+When you deployed the Manage application, you should be able to find its details in the Azure storage table. <br>
+You can also see policy states in Log Analytics by using `PolicyComplianceStates_CL` query. Only note they will be visible after some time after function gets triggered.
 
 ## Contributing
 
