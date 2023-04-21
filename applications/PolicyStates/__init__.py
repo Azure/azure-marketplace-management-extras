@@ -78,8 +78,7 @@ async def run() -> None:
     ) as client_credential, TableClient.from_connection_string(
         CONNECTION_STRING, TABLE_NAME
     ) as table_client:
-        managed_applications = table_client.query_entities(
-            "xTenant eq 'true'", select=['resource_group_name', 'subscription_id'])
+        managed_applications = table_client.list_entities()
 
         async for application in managed_applications:
             result = get_policies(
