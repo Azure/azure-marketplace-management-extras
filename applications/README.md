@@ -8,7 +8,18 @@ After retrieving the data, the application filters and sends it to the Policy Mo
 
 Finally, the Scheduled Query Rule Alert is configured to monitor non-compliant policies and triggers an Action Group for notification when an issue is detected.
 
-This solution offers automated monitoring of Azure policies for compliance, allowing for proactive identification and resolution of policy violations.  
+This solution offers automated monitoring of Azure policies for compliance, allowing for proactive identification and resolution of policy violations.
+
+## Solution components
+
+- Azure Log Analytics
+- Data collection rule and Data collection endpoint
+- Azure function
+- SP principles
+- Azure storage table
+- Azure Key vault
+- Scheduled Query Rule Alert
+- Action Group
 
 ## Authentication
 
@@ -68,6 +79,9 @@ The Notification Endpoint is built as an [Azure Function](https://azure.microsof
 4. It will also need to handle different types of [Event triggers](https://docs.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/publish-notifications#event-triggers) which include a combination of event types (e.g. PUT, PATCH, DELETE) and provisioning states (e.g. Accepted, Succeeded, Failed).
 
 5. If the provisioning state is "Succeeded", the function app will obtain the application ID from the payload and send an API call to obtain additional information about the deployment. This information includes data such as the name given by the customer, the input parameters or the output values of the deployment.
+It will also save the managed app "subscription id" and "resource group name" into Azure storage table if event type is "PUT". This information will be used for "PolicyStates" function app.
+
+5. If the provisioning state is "Deleted" and event type is "DELETE", the function app will delete the entity about manage app.
 
 ## Function configuration
 
