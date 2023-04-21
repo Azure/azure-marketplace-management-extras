@@ -14,15 +14,15 @@ Within this repository, you can find the following directories:
 
 ## Get it up and running
 
-This project is a starting point to monitor your Managed Application offer created in [Partner center]<https://partner.microsoft.com/>. It is ?expectable? that you have already created your offer. Use guidance below:
+This project is a starting point to monitor your Managed Application offer created in [Partner center](https://partner.microsoft.com/), assuming that you have already created your offer. Use guidance below.
 
 ### Prerequisites
 
-The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, the configure of necessary GitHub secrets/varibles and deploying the code.
+The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, configuring the necessary GitHub secrets and varibles, and deploying the code.
 
-### Create Azure Service Principal
+### Create the Azure Service Principal
 
-Follow these steps to create a Service Principal with the ?"Owner" role? scoped to the target Platform subscription. This Service Principal will be used by a GitHub-owned runner to authenticate to Azure and deploy the Azure function infrastructure.
+Follow these steps to create a Service Principal with the `Owner` role scoped to the target Platform subscription. This Service Principal will be used by a GitHub-owned runner to authenticate to Azure and deploy the Azure function infrastructure.
 
 - Log in to the required Azure Active Directory Tenant using the Azure CLI on your local device or via [Azure Cloud Shell](https://shell.azure.com): <br>
 `az login --tenant [Tenant ID]`
@@ -30,6 +30,16 @@ Follow these steps to create a Service Principal with the ?"Owner" role? scoped 
 - Create the Service Principal, providing an identifying name where indicated: <br> `az ad sp create-for-rbac --name [SP Name] --query "{ client_id: appId, client_secret: password, tenant_id: tenant }"`
 - Capture the values of **client_id**, **client_secret** and **tenant_id** for later use. It is recommended that you do not persist this information to disk or share the client secret for security reasons.
 - Grant the Service Principal "Owner" role on the target Platform subscription: <br> `az role assignment create --assignee [SP Client ID] --role "Owner" --scope /subscriptions/[Subscription ID]`
+
+### Configure the Managed Application service principal
+
+This Service Principal will be used by Azure function applications (NotificationHandler and PolicyStates) to authenticate against customers' deployments and fetch needed Managed app information.
+
+- Create another Service principal by using instructions from previous step [Create Azure Service Principal](#create-azure-service-principal) section without the last step, granting the Service Principal owner role.
+
+- Link this Service principal in Partner center by going to [Partner center](https://partner.microsoft.com/) and then Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
+
+- In `Authorizations` section click on `Add authorizations`. Use `Object ID` from previous step and choose the `Owner role`
 
 #### Create secrets and varibles
 
