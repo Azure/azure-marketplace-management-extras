@@ -9,15 +9,17 @@ from azure.data.tables import TableServiceClient
 from azure.core.exceptions import ResourceExistsError
 
 
+def parse_resource_id(resource_id: str):
 
-def parse_application_id(resource_id: str):
-    pattern = r"\/?subscriptions\/(?P<subscription_id>[0-9a-z-]*)\/resourceGroups\/(?P<resource_group>[a-zA-Z0-9-_.()]*)"
+    pattern = "\/?subscriptions\/(?P<subscription_id>[0-9a-z-]+)\/resourceGroups\/(?P<resource_group>[a-zA-Z0-9-_.()]+)(|\/providers\/Microsoft\.Solutions\/applications\/(?P<application_name>[a-zA-Z0-9-_.()]+))$"
     m = re.match(pattern, resource_id)
+
     if not m:
-        raise ValueError("Could not parse application id")
+        raise ValueError("Could not parse resource id")
     return (
         m.group("subscription_id"),
-        m.group("resource_group")
+        m.group("resource_group"),
+        m.group("application_name")
     )
 
 
@@ -58,14 +60,15 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.error(msg)
         return func.HttpResponse(msg, status_code=400)
 
-    # Obtain client subscription id and resource group from webhook call
+    # Obtain app subscription id and resource group from webhook call
     try:
         (
-            client_subscription_id,
-            client_resource_group,
-        ) = parse_application_id(application_id)
+            app_subscription_id,
+            app_resource_group,
+            app_name
+        ) = parse_resource_id(application_id)
     except ValueError as e:
-        msg = f"Error obtaining client subscription and resource group: {e}"
+        msg = f"Error obtaining app subscription and resource group: {e}"
         logging.error(msg)
         return func.HttpResponse(msg, status_code=500)
 
@@ -73,8 +76,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         f"""
         event_type={event_type},
         provisioning_state={provisioning_state},
-        client_subscription_id={client_subscription_id},
-        client_resource_group={client_resource_group}
+        app_subscription_id={app_subscription_id},
+        app_resource_group={app_resource_group},
+        app_name={app_name}
         """
     )
 
@@ -87,89 +91,64 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     # state is Failed, we need to return a 200 OK if the message has been processed in the function.
     # https://docs.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/publish-notifications#notification-retries
 
-    # If the provisioning state is Failed, it will contain an additional error property with
-    # information about the error that originated the failure.
-    if provisioning_state == "Failed":
-        error = req_body.get("error")
-        msg = f"Something failed during a {event_type} event. Error: {error}"
-        logging.error(msg)
-        return func.HttpResponse(msg, status_code=200)
-
-    # Ignore the Accepted provisioning state
-    if provisioning_state == "Accepted" or provisioning_state == "Deleting":
-        msg = f"Provisioning state is '{provisioning_state}'. Ignoring..."
+    if provisioning_state not in ("Succeeded", "Deleted"):
+        msg = f"Provisioning state is '{provisioning_state}'. Ignoring event..."
         logging.info(msg)
         return func.HttpResponse(msg, status_code=200)
 
-    # If the provisioning state is Succeeded or Deleted, obtain the managed application details
+    # At this point you can obtain data from the Managed Application
+    # instance, like the input parameters, deployment outputs, plan version, etc.
+    # You can check all the Application object attributes here:
+    # https://github.com/Azure/azure-sdk-for-python/blob/830ccf6ab129bdd6b7343cfae39e4e8e4b3bfd4d/sdk/resources/azure-mgmt-resource/azure/mgmt/resource/managedapplications/models/_models_py3.py#L191
     try:
-        app_client = ApplicationClient(credential, client_subscription_id)
+        app_client = ApplicationClient(credential, app_subscription_id)
         app_details = app_client.applications.get_by_id(application_id)
     except Exception as e:
         msg = f"Failed to obtain managed application details: {e}"
         logging.error(msg)
         return func.HttpResponse(msg, status_code=500)
 
-    # At this point you can obtain data from the Managed Application
-    # instance, like the input parameters, deployment outputs, plan version, etc.
-    # You can check all the Application object attributes here:
-    # https://github.com/Azure/azure-sdk-for-python/blob/830ccf6ab129bdd6b7343cfae39e4e8e4b3bfd4d/sdk/resources/azure-mgmt-resource/azure/mgmt/resource/managedapplications/models/_models_py3.py#L191
     logging.info(app_details)
 
-    if provisioning_state == "Succeeded" and event_type == "PUT":
-        try:
-            (
-                app_subscription_id,
-                app_resource_group
-            ) = parse_application_id(app_details["managed_resource_group_id"])
-            logging.info(
-                f"""
-                event_type={event_type},
-                app_subscription_id={app_subscription_id},
-                app_resource_group={app_resource_group}
-                """
-            )
-        except ValueError as e:
-            msg = f"Error obtaining managed application subscription id and resource group: {e}"
-            logging.error(msg)
-            return func.HttpResponse(msg, status_code=500)
+    try:
+        (_, mrg_name, _) = parse_resource_id(
+            app_details["managed_resource_group_id"])
+    except ValueError as e:
+        msg = f"Error obtaining the mrg name: {e}"
+        logging.error(msg)
+        return func.HttpResponse(msg, status_code=500)
 
-        entity = {
-                "subscription_id": app_subscription_id,
-                "resource_group_name": app_resource_group,
-                "PartitionKey":  app_subscription_id,
-                "RowKey": app_resource_group
-            }
+    entity = {
+        "subscription_id": app_subscription_id,
+        "app_resource_group_name": app_resource_group,
+        "app_name": app_name,
+        "mrg_name": mrg_name,
+        "PartitionKey":  app_subscription_id,
+        "RowKey": mrg_name
+    }
 
-        with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
-                table_response = table_service_client.create_table_if_not_exists(table_name=TABLE_NAME)
-                logging.info("Table name: {}".format(table_response.table_name))
-                try:
-                    resp = table_service_client.create_entity(entity=entity)
-                    logging.info(resp)
-                except ResourceExistsError:
-                    logging.error("Entity already exists")
+    with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
+        if provisioning_state == "Succeeded" and event_type == "PUT":
+            table_service_client.create_table_if_not_exists(
+                table_name=TABLE_NAME)
+            try:
+                resp = table_service_client.create_entity(entity=entity)
+                logging.info(f"Entity successfully added. {resp}")
+            except ResourceExistsError:
+                logging.error("Entity already exists")
+            except Exception as e:
+                msg = f"Error trying to add entity: {e}"
+                logging.error(msg)
+                return func.HttpResponse(msg, status_code=500)
 
-    if provisioning_state == "Deleted" and event_type == "DELETE":
-        try:
-            (
-                app_subscription_id,
-                app_resource_group
-            ) = parse_application_id(app_details["managed_resource_group_id"])
-            logging.info(
-                f"""
-                event_type={event_type},
-                app_subscription_id={app_subscription_id},
-                app_resource_group={app_resource_group}
-                """
-            )
-        except ValueError as e:
-            msg = f"Error obtaining managed application subscription id and resource group: {e}"
-            logging.error(msg)
-            return func.HttpResponse(msg, status_code=500)
-
-        with TableServiceClient.from_connection_string(CONNECTION_STRING) as table_service_client:
-            table_service_client.delete_entity(row_key=app_resource_group, partition_key=app_subscription_id)
-            logging.info("Successfully deleted")
+        if provisioning_state == "Deleted" and event_type == "DELETE":
+            try:
+                table_service_client.delete_entity(
+                    row_key=app_resource_group, partition_key=app_subscription_id)
+                logging.info("Entity successfully deleted.")
+            except Exception as e:
+                msg = f"Error trying to delete entity: {e}"
+                logging.error(msg)
+                return func.HttpResponse(msg, status_code=500)
 
     return func.HttpResponse("OK", status_code=200)
