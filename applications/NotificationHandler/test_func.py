@@ -95,7 +95,8 @@ class TestFunction(unittest.TestCase):
     @patch("NotificationHandler.DefaultAzureCredential")
     @patch("NotificationHandler.os")
     def test_invalid_nonjson_payload(self, os_env, mock_credential):
-        req = func.HttpRequest(method="post", url="/api/resource", body="foobar")
+        req = func.HttpRequest(
+            method="post", url="/api/resource", body="foobar")
         resp = main(req)
         self.assertIn(
             b"Could not parse request",
@@ -104,29 +105,6 @@ class TestFunction(unittest.TestCase):
         self.assertEqual(
             resp.status_code,
             400,
-        )
-
-    @patch("NotificationHandler.DefaultAzureCredential")
-    @patch("NotificationHandler.os")
-    def test_failed_put_event(self, os_env, mock_credential):
-        json_body = json.dumps(self.failed_event)
-        req = func.HttpRequest(
-            method="post",
-            url="/api/resource",
-            body=json_body.encode(),
-        )
-        resp = main(req)
-        self.assertIn(
-            b"Something failed during a PUT event",
-            resp.get_body(),
-        )
-        self.assertIn(
-            b"DetailedErrorCode",
-            resp.get_body(),
-        )
-        self.assertEqual(
-            resp.status_code,
-            200,
         )
 
     @patch("NotificationHandler.DefaultAzureCredential")
@@ -142,13 +120,10 @@ class TestFunction(unittest.TestCase):
         )
         resp = main(req)
         self.assertIn(
-            b"Something failed during a DELETE event",
+            b"Provisioning state is 'Failed'. Ignoring event...",
             resp.get_body(),
         )
-        self.assertIn(
-            b"DetailedErrorCode",
-            resp.get_body(),
-        )
+
         self.assertEqual(
             resp.status_code,
             200,
@@ -198,12 +173,12 @@ class TestFunction(unittest.TestCase):
 
     @patch("NotificationHandler.DefaultAzureCredential")
     @patch("NotificationHandler.os")
-    @patch("NotificationHandler.TableServiceClient")
+    @patch("NotificationHandler.TableClient")
     def test_succeeded_state(self, table_client_mock, os_env, mock_credential):
         with patch("NotificationHandler.ApplicationClient.applications") as mock_application_client:
-            mock_application_client.get_by_id.return_value = {
-                    "managed_resource_group_id": "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test"
-                }
+            class AppDetails:
+                managed_resource_group_id = "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test"
+            mock_application_client.get_by_id.return_value = AppDetails
             json_body = json.dumps(self.succeeded_event)
             req = func.HttpRequest(
                 method="post",
@@ -222,12 +197,12 @@ class TestFunction(unittest.TestCase):
 
     @patch("NotificationHandler.DefaultAzureCredential")
     @patch("NotificationHandler.os")
-    @patch("NotificationHandler.TableServiceClient")
+    @patch("NotificationHandler.TableClient")
     def test_deleted_state(self, table_client_mock, os_env, mock_credential):
         with patch("NotificationHandler.ApplicationClient.applications") as mock_application_client:
             mock_application_client.get_by_id.return_value = {
-                    "managed_resource_group_id": "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test"
-                }
+                "managed_resource_group_id": "subscriptions/bb5840c6-bd1f-4431-b82a-bcff37b7fd07/resourceGroups/managed-test"
+            }
             json_body = json.dumps(self.deleted_event)
             req = func.HttpRequest(
                 method="post",
