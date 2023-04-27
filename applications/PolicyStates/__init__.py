@@ -26,6 +26,7 @@ AZURE_CLIENT_SECRET = str(os.environ["AZURE_CLIENT_SECRET"])
 CONNECTION_STRING = str(os.environ["AzureWebJobsStorage"])
 TABLE_NAME = str(os.environ["TABLE_NAME"])
 
+
 async def get_resource_group_policies(policy_client, subscription_id, resource_group_name) -> AsyncIterable:
     # Do not change or remove filter. It is used to query policies specifically assigned for RG
     scope = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}"
@@ -82,7 +83,7 @@ async def run() -> None:
 
         async for application in managed_applications:
             result = get_policies(
-                client_credential, application["subscription_id"], application["resource_group_name"])
+                client_credential, application["subscription_id"], application["mrg_name"])
             all_applications_policies_to_upload.append(result)
 
         policies_upload = await asyncio.gather(*all_applications_policies_to_upload, return_exceptions=True)
