@@ -69,6 +69,8 @@ For each of the secrets defined in the table below, follow these steps to add ea
 | RESOURCE_GROUP_NAME    | marketplace-manage-applications | RG name |
 | STORAGE_ACCOUNT_TABLE_NAME | applications | name of Table for storing Manage app details in Azure storage |
 | SUBSCRIPTION_NAME    | [string] | Subscription name where infra will be deployed |
+| EMAIL_ADDRESS    | [string] | Email address for the alert notification when policies become non-compliant  |
+| RECEIVERS_NAME    | [string] | The receiver's name to who the alert is sent  |
 
 ### Run the workflows
 
@@ -79,14 +81,24 @@ Follow these steps to run workflows which will deploy the infrastructure and cod
 - Ensure the desired branch is selected, e.g. **main**
 - Click the **Run workflow** button
 - Copy function name from logs in `Show function name` step after the `Infrastructure deployment` workflow is finished
-- Navigate to `Code deployment` workflow to run the second one. Paste the function name in input.
+- Navigate to `Code deployment` workflow to run the second one. Paste the function name in the input
+
+Once the function is deployed, you can configure the Managed Application to use the Notification Endpoint URL. You can do this by following these steps:
+
+- Open the Managed Application in [Partner center](https://partner.microsoft.com/)
+- Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
+- Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
+Save the changes.
+- Republish your plan
 
 ### Confirm Azure function applications are running successfully
 
 Once all Workflows have completed, navigate to Resource group `marketplace-manage-applications`. Select Azure function and click on `Functions`. You should see `NotificationHandler` and `PolicyStates`. Each functions has logs that can indicate the status. You can find them in `Monitor` section.
 
 When you deployed the Manage application, you should be able to find its details in the Azure storage table. <br>
-You can also see policy states in Log Analytics by using `PolicyComplianceStates_CL` query. Only note they will be visible after some time after function gets triggered.
+You can also see policy states in Log Analytics by using `PolicyComplianceStates_CL` query.
+Only note they will be visible after some time after function gets triggered.
+If policies become non-complaint, you should get the email notification.
 
 ## Contributing
 

@@ -65,6 +65,8 @@ jobs:
             spClientSecret=${{ secrets.SP_CLIENT_SECRET }}
             spTenantId=${{ secrets.SP_TENANT_ID }}
             storageAccountTableName=${{ vars.STORAGE_ACCOUNT_TABLE_NAME }}
+            emailAddress=${{ vars.EMAIL_ADDRESS }}
+            receiversName=${{ vars.RECEIVERS_NAME }}
           deploymentName: git-${{ env.SHA_SHORT }}
 
       - name: Show function name
