@@ -1,3 +1,66 @@
+# Policy states collector
+
+The functionality that allows publishers to access and manage deployed customers managed application is the foundation upon which the entire solution is built.
+
+The time-triggered Azure Function application, policy states collector, uses Azure APIs to query the latest state of Azure policies in managed applications. To build the correct request, the application retrieves the Resource Group name and subscription ID from Azure Blob Storage. The application leverages the Service Principal, which is configured in the Managed App plan, to access managed resource policies.
+
+After retrieving the data, the application filters and sends it to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring and analysis. It filters only the policies deployed by the Managed Application to ensure that no customers policies are pulled.
+
+Finally, the Scheduled Query Rule Alert is configured to monitor non-compliant policies and triggers an Action Group for notification when an issue is detected.
+
+This solution offers automated monitoring of Azure policies for compliance, allowing for proactive identification and resolution of policy violations.
+
+## Solution components
+
+- Azure Log Analytics
+- Data collection rule and Data collection endpoint
+- Azure function
+- SP principles
+- Azure storage table
+- Azure Key vault
+- Scheduled Query Rule Alert
+- Action Group
+
+## Authentication
+
+The function source code is written in Python and relies on the [`ClientSecretCredential()`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.clientsecretcredential?view=azure-dotnet) and [`ManagedIdentityCredential()`](https://learn.microsoft.com/en-us/dotnet/api/azure.identity.managedidentitycredential?view=azure-dotnet)
+classes for authentication to Azure.
+
+Azure function has system assigned identity and two roles that allow read policies and write data to Log Analytics.
+
+## Local setup
+
+The function has the following requirements:
+
+- AZ cli
+- [Azure Functions runtime](https://docs.microsoft.com/en-us/azure/azure-functions/functions-versions?tabs=in-process%2Cv4&pivots=programming-language-python) version 4.x
+- Python 3.9 and pip
+- Virtualenv
+- Also check out [Quickstart: Create a function in Azure with Python using Visual Studio Code](https://docs.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-python#configure-your-environment)
+to find out additional requirements and the recommended VS Code extensions.
+
+To get started, navigate to the `applications` directory and create your virtual environment.
+
+```sh
+virtualenv .venv
+```
+
+Then you can source it and install the function dependencies in the `requirements.txt`.
+
+```sh
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Update `function.json` to `"schedule": "* * * * * *"` for triggering application every second for testing purpose.
+
+Set up all local envs. Take an existing deployed Azure Function name and then run `func azure functionapp fetch-app-settings <yourAFname>`
+This will create `local.settings.json` file with all envs.
+
+Last step is assign correct role for DataCollectionRule. Go to `Monitor > Data Collection Rules` and find your DCR. In `Acess Contorole` add role `Monitoring Metrics Publisher` to your account.
+
+Run the function with `func start` command provided by the Azure Functions runtime.
+
 # Notification Endpoint
 
 This directory contains the necessary artifacts to deploy the Notification Endpoint that captures events triggered when the managed version of application is installed by customers from the Marketplace. To understand more about the process please check the [Managed Application deployment notifications](../docs/deploy-infrastructure.md) document.
@@ -16,6 +79,9 @@ The Notification Endpoint is built as an [Azure Function](https://azure.microsof
 4. It will also need to handle different types of [Event triggers](https://docs.microsoft.com/en-us/azure/azure-resource-manager/managed-applications/publish-notifications#event-triggers) which include a combination of event types (e.g. PUT, PATCH, DELETE) and provisioning states (e.g. Accepted, Succeeded, Failed).
 
 5. If the provisioning state is "Succeeded", the function app will obtain the application ID from the payload and send an API call to obtain additional information about the deployment. This information includes data such as the name given by the customer, the input parameters or the output values of the deployment.
+It will also save the managed app "subscription id" and "resource group name" into Azure storage table if event type is "PUT". This information will be used for "PolicyStates" function app.
+
+5. If the provisioning state is "Deleted" and event type is "DELETE", the function app will delete the entity about manage app.
 
 ## Function configuration
 

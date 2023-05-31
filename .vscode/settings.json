@@ -1,6 +1,6 @@
 {
     "python.testing.pytestArgs": [
-        "policy-states-collector"
+        "applications"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true

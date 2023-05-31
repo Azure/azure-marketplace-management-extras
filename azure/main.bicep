@@ -3,10 +3,12 @@ targetScope = 'resourceGroup'
 var logAnalyticsWorkspaceName = 'logAnalyticsMarketplace'
 var policyStatesTableName = 'PolicyComplianceStates_CL'
 var streamDeclaration = 'Custom-${policyStatesTableName}'
-var storageAccountTableName = 'default'
 
 param appName string
 param location string = resourceGroup().location
+param storageAccountTableName string
+param emailAddress string
+param receiversName string
 
 @secure()
 param spClientId string
@@ -76,8 +78,8 @@ resource actionGroupAlerts 'Microsoft.Insights/actionGroups@2022-06-01' = {
     groupShortName: 'shortNsme'
     emailReceivers: [
       {
-        emailAddress: 'your@email.com'
-        name: 'myname'
+        emailAddress: emailAddress
+        name: receiversName
         useCommonAlertSchema: false
       }
     ]
@@ -135,3 +137,5 @@ module policyStatesCollectorFunction 'function.bicep' = {
     containerLogTable
   ]
 }
+
+output policyStatesCollectorFunctionName string = policyStatesCollectorFunction.outputs.functionAppName

@@ -1,11 +1,8 @@
-name: Notification Endpoint
-# description: Deploys the Notification Endpoint infrastructure and code
+name: Infrastructure deployment
+# description: Deploys the infrastructure for apps
 
 on:
   workflow_dispatch:
-
-env:
-  APP_NAME: 'marketplace-apps'
 
 concurrency:
   # Serializing this workflow.
@@ -43,6 +40,12 @@ jobs:
         run: |
           bicep build main.bicep
 
+      - name: Delete resource group
+        working-directory: ./azure
+        run: |
+          az group delete --name ${{ vars.RESOURCE_GROUP_NAME }} --yes --subscription ${{ secrets.SUBSCRIPTION_ID }} || true
+          az group wait --name ${{ vars.RESOURCE_GROUP_NAME }} --deleted
+
       - name: Create resource group
         run: |
           az group create \
@@ -57,8 +60,15 @@ jobs:
           resourceGroupName: ${{ vars.RESOURCE_GROUP_NAME }}
           template: ./azure/main.json
           parameters: >
-            appName=${{ env.APP_NAME }}
+            appName=${{ vars.APP_NAME }}
             spClientId=${{ secrets.SP_CLIENT_ID }}
             spClientSecret=${{ secrets.SP_CLIENT_SECRET }}
             spTenantId=${{ secrets.SP_TENANT_ID }}
+            storageAccountTableName=${{ vars.STORAGE_ACCOUNT_TABLE_NAME }}
+            emailAddress=${{ vars.EMAIL_ADDRESS }}
+            receiversName=${{ vars.RECEIVERS_NAME }}
           deploymentName: git-${{ env.SHA_SHORT }}
+
+      - name: Show function name
+        run: |
+          echo "✅ Function name:  ${{ steps.deploy.outputs.policyStatesCollectorFunctionName }}"
