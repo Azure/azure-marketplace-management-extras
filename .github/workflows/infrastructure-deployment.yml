@@ -40,12 +40,6 @@ jobs:
         run: |
           bicep build main.bicep
 
-      - name: Delete resource group
-        working-directory: ./azure
-        run: |
-          az group delete --name ${{ vars.RESOURCE_GROUP_NAME }} --yes --subscription ${{ secrets.SUBSCRIPTION_ID }} || true
-          az group wait --name ${{ vars.RESOURCE_GROUP_NAME }} --deleted
-
       - name: Create resource group
         run: |
           az group create \
