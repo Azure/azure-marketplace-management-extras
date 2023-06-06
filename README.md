@@ -48,7 +48,7 @@ This Service Principal will be used by Azure function applications (Notification
 
 - In `Authorizations` section click on `Add authorizations`. Use `Object ID` from previous step and choose the `Owner role`
 
-![Managed SP config](https://github.com/Azure/marketplace-management/blob/main/applications/managed_sp_config.png)
+![Managed SP config](./applications/managed_sp_config.jpg)
 
 ### Create secrets and varibles
 
@@ -98,7 +98,7 @@ Once the function is deployed, you can configure the Managed Application to use 
 - Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
 - Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
 Save the changes.
-![Notification Endpoint URL](https://github.com/Azure/marketplace-management/blob/main/applications/notification_endpoint_url.png)
+![Notification Endpoint URL](./applications/notification_endpoint_url.jpg)
 
 - Republish your plan
 
