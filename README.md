@@ -84,12 +84,14 @@ For each of the secrets defined in the table below, follow these steps to add ea
 ### Run the workflows
 
 Follow these steps to run workflows which will deploy the infrastructure and code.
+![Managed SP config](./applications/resources.jpg)
 
 - Navigate to **Actions** -> **Infrastructure deployment**
 - Click **Run workflow**
 - Ensure the desired branch is selected, e.g. **main**
 - Click the **Run workflow** button
 - Copy function name from logs in `Show function name` step after the `Infrastructure deployment` workflow is finished
+![Function name](./applications/function_name.jpg)
 - Navigate to `Code deployment` workflow to run the second one. Paste the function name in the input
 
 Once the function is deployed, you can configure the Managed Application to use the Notification Endpoint URL. You can do this by following these steps:
