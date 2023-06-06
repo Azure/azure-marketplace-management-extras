@@ -1,8 +1,13 @@
 # Overview
 
-This project features an Azure Function consisting of two applications designed to automatically track deployed Managed Applications. For further information about each function, please refer to the README file located in the `applications` directory.
+This repository contains two Azure Function applications designed to help Managed Application solution owners in Partner Centre monitor and manage their deployed apps.
 
-These functions were created as part of the development process for the Managed Application offer and are highly reusable, making them an excellent starting point for others looking to build similar solutions.
+The first app, Policy States Collector, automates monitoring of Azure policies for compliance by querying the latest state of Azure policies in managed applications, filtering and sending the data to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring. The app also includes a Scheduled Query Rule Alert that monitors non-compliant policies and triggers an Action Group for notification when an issue is detected.
+
+The second app, Notification Endpoint, captures events triggered during customer deployment and saves managed app information into an Azure storage table, allowing solution owners to build analytics and alerts on top of this data.
+For further information about each function, please refer to the README file located in the `applications` directory.
+
+Please note that these applications are an extra tool for publishers and is not required for using Managed Applications. Additionally, there are starter applications and can be customized according to your needs. The solution is part of Marketplace examples (add link later)
 
 ## Repository content
 
@@ -19,6 +24,8 @@ This project is a starting point to monitor your Managed Application offer creat
 ### Prerequisites
 
 The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, configuring the necessary GitHub secrets and varibles, and deploying the code.
+
+> :warning: **please make sure you deploy the Notification Endpoint before you publish your managed app offer. Otherwise, you will need to republish the offer again with configuration of the Notification Endpoint URL.**
 
 ### Create the Azure Service Principal
 
