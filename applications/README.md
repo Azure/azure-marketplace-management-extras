@@ -10,6 +10,8 @@ Finally, the Scheduled Query Rule Alert is configured to monitor non-compliant p
 
 This solution offers automated monitoring of Azure policies for compliance, allowing for proactive identification and resolution of policy violations.
 
+![diagram](https://github.com/Azure/marketplace-management/blob/main/applications/diagram.png)
+
 ## Solution components
 
 - Azure Log Analytics
