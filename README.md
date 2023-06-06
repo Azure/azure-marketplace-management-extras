@@ -25,7 +25,7 @@ This project is a starting point to monitor your Managed Application offer creat
 
 ### Prerequisites
 
-The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, configuring the necessary GitHub secrets and varibles, and deploying the code.
+The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, configuring the necessary GitHub secrets and variables, and deploying the code.
 
 ### Create the Azure Service Principal
 
@@ -44,17 +44,17 @@ This Service Principal will be used by Azure function applications (Notification
 
 - Create another Service principal by using instructions from previous step [Create Azure Service Principal](#create-the-azure-service-principal) section without the last step (granting the Service Principal owner role).
 
-- Link this Service principal in Partner center by going to [Partner center](https://partner.microsoft.com/) and then Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
+- Link this Service principal in Partner center by going to [Partner center](https://partner.microsoft.com/) and then Navigate to **your offer** > **your managed plan** > **Plan overview** > **Technical configuration**
 
 - In `Authorizations` section click on `Add authorizations`. Use `Object ID` from previous step and choose the `Owner role`
 
 ![Managed SP config](./applications/managed_sp_config.jpg)
 
-### Create secrets and varibles
+### Create secrets and variables
 
-For each of the secrets defined in the table below, follow these steps to add each secret and varibles the corresponding value.
+For each of the secrets defined in the table below, follow these steps to add each secret and variables the corresponding value.
 
-- Navigate to **your github repo** > **Settings** > **Secrets and varibles** > **New repository secret**
+- Navigate to **your github repo** > **Settings** > **Secrets and variables** > **New repository secret**
 
 - Add the secret name and value, taking care to use the exact secret name provided as this is explicitly referenced in the GitHub workflow.
 
@@ -67,7 +67,7 @@ For each of the secrets defined in the table below, follow these steps to add ea
 | SP_CLIENT_ID    | 9505fb9a-96e6-46d1-ac9b-2f74ee57f6d6 | Manage app Client ID from the [Configure the Managed Application service principal](#configure-the-managed-application-service-principal) |
 | SP_CLIENT_SECRET | [secure string] | Managed app Client Secret from the [Configure the Managed Application service principal](#configure-the-managed-application-service-principal) |
 
-- Navigate to **Settings** > **Secrets and varibles** > **Varibles** > **New repository varibles**
+- Navigate to **Settings** > **Secrets and variables** > **variables** > **New repository variables**
 
 - Add the varible name and value, taking care to use the exact secret name provided as this is explicitly referenced in the GitHub workflow.
 
@@ -84,7 +84,7 @@ For each of the secrets defined in the table below, follow these steps to add ea
 ### Run the workflows
 
 Follow these steps to run workflows which will deploy the infrastructure and code.
-![Managed SP config](./applications/resources.jpg)
+![Managed SP config](./applications/deployed_resources.jpg)
 
 - Navigate to **Actions** -> **Infrastructure deployment**
 - Click **Run workflow**
@@ -97,7 +97,7 @@ Follow these steps to run workflows which will deploy the infrastructure and cod
 Once the function is deployed, you can configure the Managed Application to use the Notification Endpoint URL. You can do this by following these steps:
 
 - Open the Managed Application in [Partner center](https://partner.microsoft.com/)
-- Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
+- Navigate to **your offer** > **your managed plan** > **Plan overview** > **Technical configuration**
 - Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
 Save the changes.
 ![Notification Endpoint URL](./applications/notification_endpoint_url.jpg)
