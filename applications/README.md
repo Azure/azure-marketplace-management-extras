@@ -68,7 +68,7 @@ This directory contains the necessary artifacts to deploy the Notification Endpo
 The idea behind this project is to be used as a starter application that can be further customized to fit the needs of the publisher.
 The Notification Endpoint is built as an [Azure Function](https://azure.microsoft.com/en-us/services/functions/) invoked via an HTTP trigger whose URL is configured as the notification endpoint URL of  the Managed Application.
 
-> :warning: **please make sure you deploy the Notification Endpoint before you publish your managed app offer. Otherwise, you will need to republish the offer again with configuration of the Notification Endpoint URL.**
+> :warning: **Please make sure you deploy the Notification Endpoint before you publish your managed app offer. Otherwise, you will need to republish the offer again with configuration of the Notification Endpoint URL.**
 
 
 ## Requirements
