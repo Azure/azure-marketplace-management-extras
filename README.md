@@ -100,7 +100,7 @@ Once the function is deployed, you can configure the Managed Application to use 
 Save the changes.
 ![Notification Endpoint URL](./applications/notification_endpoint_url.jpg)
 
-- Republish your plan
+- Publish / republish your plan
 
 ### Confirm Azure function applications are running successfully
 
