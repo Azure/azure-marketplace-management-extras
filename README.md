@@ -2,10 +2,14 @@
 
 This repository contains two Azure Function applications designed to help Managed Application solution owners in Partner Centre monitor and manage their deployed apps.
 
-The first app, Policy States Collector, automates monitoring of Azure policies for compliance by querying the latest state of Azure policies in managed applications, filtering and sending the data to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring. The app also includes a Scheduled Query Rule Alert that monitors non-compliant policies and triggers an Action Group for notification when an issue is detected.
-
-The second app, Notification Endpoint, captures events triggered during customer deployment and saves managed app information into an Azure storage table, allowing solution owners to build analytics and alerts on top of this data.
+The first app, Notification Endpoint, captures events triggered during customer deployment and saves managed app information into an Azure storage table, allowing solution owners to build analytics and alerts on top of this data.
 For further information about each function, please refer to the [README file](https://github.com/Azure/marketplace-management/blob/feedback/applications/README.md) located in the `applications` directory.
+
+![diagram](./notification_endpoint.png)
+
+The second app, Policy States Collector, automates monitoring of Azure policies for compliance by querying the latest state of Azure policies in managed applications, filtering and sending the data to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring. The app also includes a Scheduled Query Rule Alert that monitors non-compliant policies and triggers an Action Group for notification when an issue is detected.
+
+![diagram](./diagram_policy.png)
 
 Please note that these applications are an extra tool for publishers and is not required for using Managed Applications. Additionally, there are starter applications and can be customized according to your needs. The solution is part of Marketplace examples (add link later)
 
