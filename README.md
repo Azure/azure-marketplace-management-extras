@@ -5,11 +5,11 @@ This repository contains two Azure Function applications designed to help Manage
 The first app, Notification Endpoint, captures events triggered during customer deployment and saves managed app information into an Azure storage table, allowing solution owners to build analytics and alerts on top of this data.
 For further information about each function, please refer to the [README file](https://github.com/Azure/marketplace-management/blob/feedback/applications/README.md) located in the `applications` directory.
 
-<img src="./applications/notification_endpoint.png" width="400">
+<img src="./images/notification_endpoint.png" width="400">
 
 The second app, Policy States Collector, automates monitoring of Azure policies for compliance by querying the latest state of Azure policies in managed applications, filtering and sending the data to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring. The app also includes a Scheduled Query Rule Alert that monitors non-compliant policies and triggers an Action Group for notification when an issue is detected.
 
-<img src="./applications/diagram_policy.png" width="600">
+<img src="./images/diagram_policy.png" width="600">
 
 Please note that these applications are an extra tool for publishers and is not required for using Managed Applications. Additionally, there are starter applications and can be customized according to your needs. The solution is part of Marketplace examples (add link later)
 
@@ -18,8 +18,9 @@ Please note that these applications are an extra tool for publishers and is not 
 Within this repository, you can find the following directories:
 
 - `.github/workflows`: automated workflows to deploy infrastructure and code.
-- `azure`: infrastructure templates that deploy the Azure components needed to support applications.
 - `applications`: code and documentation describing each application in more details.
+- `azure`: infrastructure templates that deploy the Azure components needed to support applications.
+- `images`: images for README.
 
 ## Get it up and running
 
@@ -52,7 +53,7 @@ This Service Principal will be used by Azure function applications (Notification
 
 - In `Authorizations` section click on `Add authorizations`. Use `Object ID` from previous step and choose the `Owner role`
 
-![Managed SP config](./applications/managed_sp_config.jpg)
+![Managed SP config](./images/managed_sp_config.jpg)
 
 ### Create secrets and variables
 
@@ -88,7 +89,7 @@ For each of the secrets defined in the table below, follow these steps to add ea
 ### Run the workflows
 
 Follow these steps to run workflows which will deploy the infrastructure and code.
-![Managed SP config](./applications/deployed_resources.jpg)
+![Managed SP config](./images/deployed_resources.jpg)
 
 - Navigate to **Actions** -> **Infrastructure deployment**
 - Click **Run workflow**
@@ -96,7 +97,7 @@ Follow these steps to run workflows which will deploy the infrastructure and cod
 - Click the **Run workflow** button
 - Copy function name from logs in `Show function name` step after the `Infrastructure deployment` workflow is finished
 
-<img src="./applications/function_name.jpg" width="500">
+<img src="./images/function_name.jpg" width="500">
 
 - Navigate to `Code deployment` workflow to run the second one. Paste the function name in the input
 
@@ -107,7 +108,7 @@ Once the function is deployed, you can configure the Managed Application to use 
 - Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
 Save the changes.
 
-<img src="./applications/notification_endpoint_url.jpg" width="600">
+<img src="./images/notification_endpoint_url.jpg" width="600">
 
 - Publish / republish your plan
 
