@@ -96,7 +96,7 @@ Follow these steps to run workflows which will deploy the infrastructure and cod
 - Click the **Run workflow** button
 - Copy function name from logs in `Show function name` step after the `Infrastructure deployment` workflow is finished
 
-<img src="./applications/function_name.jpg" width="400">
+<img src="./applications/function_name.jpg" width="500">
 
 - Navigate to `Code deployment` workflow to run the second one. Paste the function name in the input
 
@@ -106,7 +106,9 @@ Once the function is deployed, you can configure the Managed Application to use 
 - Navigate to **your offer** > **your managed plan** > **Plan overview** > **Technical configuration**
 - Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
 Save the changes.
-![Notification Endpoint URL](./applications/notification_endpoint_url.jpg)
+
+<img src="./applications/notification_endpoint_url.jpg)" width="600">
+
 
 - Publish / republish your plan
 
