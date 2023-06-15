@@ -107,8 +107,7 @@ Once the function is deployed, you can configure the Managed Application to use 
 - Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
 Save the changes.
 
-<img src="./applications/notification_endpoint_url.jpg)" width="600">
-
+<img src="./applications/notification_endpoint_url.jpg" width="600">
 
 - Publish / republish your plan
 
