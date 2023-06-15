@@ -7,6 +7,8 @@ For further information about each function, please refer to the [README file](h
 
 ![diagram](./applications/notification_endpoint.png)
 
+<img src="./applications/notification_endpoint.png" width="400">
+
 The second app, Policy States Collector, automates monitoring of Azure policies for compliance by querying the latest state of Azure policies in managed applications, filtering and sending the data to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring. The app also includes a Scheduled Query Rule Alert that monitors non-compliant policies and triggers an Action Group for notification when an issue is detected.
 
 ![diagram](./applications/diagram_policy.png)
