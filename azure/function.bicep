@@ -15,7 +15,7 @@ param spClientSecret string
 @secure()
 param spTenantId string
 
-var uniqueName = '${appName}-${substring(replace(guid(resourceGroup().id), '-', ''), 0, 8)}'
+var uniqueName = '${appName}${substring(replace(guid(resourceGroup().id), '-', ''), 0, 8)}'
 // Storage account and Key Vault names must be between 3 and 24 characters in length and use numbers and lower-case letters only.
 var uniqueNameWithoutDashes = toLower(replace(uniqueName, '-', ''))
 

@@ -10,6 +10,8 @@ Finally, the Scheduled Query Rule Alert is configured to monitor non-compliant p
 
 This solution offers automated monitoring of Azure policies for compliance, allowing for proactive identification and resolution of policy violations.
 
+<img src="../images/diagram_policy.png" width="600">
+
 ## Solution components
 
 - Azure Log Analytics
@@ -67,6 +69,11 @@ This directory contains the necessary artifacts to deploy the Notification Endpo
 
 The idea behind this project is to be used as a starter application that can be further customized to fit the needs of the publisher.
 The Notification Endpoint is built as an [Azure Function](https://azure.microsoft.com/en-us/services/functions/) invoked via an HTTP trigger whose URL is configured as the notification endpoint URL of  the Managed Application.
+
+> :warning: **Please make sure you deploy the Notification Endpoint before you publish your managed app offer. Otherwise, you will need to republish the offer again with configuration of the Notification Endpoint URL.**
+
+<img src="../images/notification_endpoint.png" width="400">
+
 
 ## Requirements
 

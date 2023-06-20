@@ -1,24 +1,36 @@
 # Overview
 
-This project features an Azure Function consisting of two applications designed to automatically track deployed Managed Applications. For further information about each function, please refer to the README file located in the `applications` directory.
+This repository contains two Azure Function applications designed to help Managed Application solution owners in Partner Centre monitor and manage their deployed apps.
 
-These functions were created as part of the development process for the Managed Application offer and are highly reusable, making them an excellent starting point for others looking to build similar solutions.
+The first app, Notification Endpoint, captures events triggered during customer deployment and saves managed app information into an Azure storage table, allowing solution owners to build analytics and alerts on top of this data.
+For further information about each function, please refer to the [README file](https://github.com/Azure/marketplace-management/blob/feedback/applications/README.md) located in the `applications` directory.
+
+<img src="./images/notification_endpoint.png" width="400">
+
+The second app, Policy States Collector, automates monitoring of Azure policies for compliance by querying the latest state of Azure policies in managed applications, filtering and sending the data to the Policy Monitor table in the Log Analytics Workspace for real-time monitoring. The app also includes a Scheduled Query Rule Alert that monitors non-compliant policies and triggers an Action Group for notification when an issue is detected.
+
+<img src="./images/diagram_policy.png" width="600">
+
+Please note that these applications are an extra tool for publishers and is not required for using Managed Applications. Additionally, there are starter applications and can be customized according to your needs. The solution is part of Marketplace examples (add link later)
 
 ## Repository content
 
 Within this repository, you can find the following directories:
 
 - `.github/workflows`: automated workflows to deploy infrastructure and code.
-- `azure`: infrastructure templates that deploy the Azure components needed to support applications.
 - `applications`: code and documentation describing each application in more details.
+- `azure`: infrastructure templates that deploy the Azure components needed to support applications.
+- `images`: images for README.
 
 ## Get it up and running
 
 This project is a starting point to monitor your Managed Application offer created in [Partner center](https://partner.microsoft.com/), assuming that you have already created your offer. Use the guidance below.
 
+> :warning: **Please make sure you deploy the Notification Endpoint before you publish your managed app offer. Otherwise, you will need to republish the offer again with configuration of the Notification Endpoint URL.**
+
 ### Prerequisites
 
-The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, configuring the necessary GitHub secrets and varibles, and deploying the code.
+The deployment of the azure function requires a series of actions to set up the environment, including the creation of a Marketplace [Managed Application service principal](https://learn.microsoft.com/en-gb/partner-center/marketplace/plan-azure-app-managed-app#choose-who-can-manage-the-application), an Azure service principal, configuring the necessary GitHub secrets and variables, and deploying the code.
 
 ### Create the Azure Service Principal
 
@@ -37,15 +49,17 @@ This Service Principal will be used by Azure function applications (Notification
 
 - Create another Service principal by using instructions from previous step [Create Azure Service Principal](#create-the-azure-service-principal) section without the last step (granting the Service Principal owner role).
 
-- Link this Service principal in Partner center by going to [Partner center](https://partner.microsoft.com/) and then Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
+- Link this Service principal in Partner center by going to [Partner center](https://partner.microsoft.com/) and then Navigate to **your offer** > **your managed plan** > **Plan overview** > **Technical configuration**
 
 - In `Authorizations` section click on `Add authorizations`. Use `Object ID` from previous step and choose the `Owner role`
 
-### Create secrets and varibles
+![Managed SP config](./images/managed_sp_config.jpg)
 
-For each of the secrets defined in the table below, follow these steps to add each secret and varibles the corresponding value.
+### Create secrets and variables
 
-- Navigate to **your github repo** > **Settings** > **Secrets and varibles** > **New repository secret**
+For each of the secrets defined in the table below, follow these steps to add each secret and variables the corresponding value.
+
+- Navigate to **your github repo** > **Settings** > **Secrets and variables** > **New repository secret**
 
 - Add the secret name and value, taking care to use the exact secret name provided as this is explicitly referenced in the GitHub workflow.
 
@@ -58,7 +72,7 @@ For each of the secrets defined in the table below, follow these steps to add ea
 | SP_CLIENT_ID    | 9505fb9a-96e6-46d1-ac9b-2f74ee57f6d6 | Manage app Client ID from the [Configure the Managed Application service principal](#configure-the-managed-application-service-principal) |
 | SP_CLIENT_SECRET | [secure string] | Managed app Client Secret from the [Configure the Managed Application service principal](#configure-the-managed-application-service-principal) |
 
-- Navigate to **Settings** > **Secrets and varibles** > **Varibles** > **New repository varibles**
+- Navigate to **Settings** > **Secrets and variables** > **variables** > **New repository variables**
 
 - Add the varible name and value, taking care to use the exact secret name provided as this is explicitly referenced in the GitHub workflow.
 
@@ -75,21 +89,28 @@ For each of the secrets defined in the table below, follow these steps to add ea
 ### Run the workflows
 
 Follow these steps to run workflows which will deploy the infrastructure and code.
+![Managed SP config](./images/deployed_resources.jpg)
 
 - Navigate to **Actions** -> **Infrastructure deployment**
 - Click **Run workflow**
 - Ensure the desired branch is selected, e.g. **main**
 - Click the **Run workflow** button
 - Copy function name from logs in `Show function name` step after the `Infrastructure deployment` workflow is finished
+
+<img src="./images/function_name.jpg" width="500">
+
 - Navigate to `Code deployment` workflow to run the second one. Paste the function name in the input
 
 Once the function is deployed, you can configure the Managed Application to use the Notification Endpoint URL. You can do this by following these steps:
 
 - Open the Managed Application in [Partner center](https://partner.microsoft.com/)
-- Navigate to **your offer** > **your managed plane** > **Plan overview** > **Technical configuration**
+- Navigate to **your offer** > **your managed plan** > **Plan overview** > **Technical configuration**
 - Enter the Notification Endpoint URL, which is the URL of the Azure Function that you created.
 Save the changes.
-- Republish your plan
+
+<img src="./images/notification_endpoint_url.jpg" width="600">
+
+- Publish / republish your plan
 
 ### Confirm Azure function applications are running successfully
 
