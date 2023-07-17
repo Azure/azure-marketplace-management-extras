@@ -11,7 +11,7 @@ The second app, Policy States Collector, automates monitoring of Azure policies 
 
 <img src="./images/diagram_policy.png" width="600">
 
-Please note that these applications are an extra tool for publishers and is not required for using Managed Applications. Additionally, there are starter applications and can be customized according to your needs. The solution is part of Marketplace examples (add link later)
+Please note that these applications are an extra tool for publishers and is not required for using Managed Applications. Additionally, there are starter applications and can be customized according to your needs. The solution is part of [Azure Marketplace Managed Application samples](https://github.com/microsoft/commercial-marketplace-resources#azure-managed-application-offers)
 
 ## Repository content
 
